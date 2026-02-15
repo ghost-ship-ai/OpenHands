@@ -20,6 +20,9 @@ from openhands.app_server.app_conversation.app_conversation_models import (
 from openhands.app_server.app_conversation.app_conversation_service import (
     AppConversationService,
 )
+from openhands.app_server.app_conversation.hook_loader import (
+    load_project_hooks_from_agent_server,
+)
 from openhands.app_server.app_conversation.skill_loader import (
     build_org_config,
     build_sandbox_config,
@@ -31,6 +34,7 @@ from openhands.sdk import Agent
 from openhands.sdk.context.agent_context import AgentContext
 from openhands.sdk.context.condenser import LLMSummarizingCondenser
 from openhands.sdk.context.skills import Skill
+from openhands.sdk.hooks import HookConfig
 from openhands.sdk.llm import LLM
 from openhands.sdk.security.analyzer import SecurityAnalyzerBase
 from openhands.sdk.security.confirmation_policy import (
@@ -63,7 +67,7 @@ class AppConversationServiceBase(AppConversationService, ABC):
         selected_repository: str | None,
         working_dir: str,
         agent_server_url: str,
-    ) -> list[Skill]:
+    ) -> tuple[list[Skill], HookConfig | None]:
         """Load skills from all sources via the agent-server.
 
         This method calls the agent-server's /api/skills endpoint to load and
@@ -88,7 +92,7 @@ class AppConversationServiceBase(AppConversationService, ABC):
 
             if not agent_server_url:
                 _logger.warning('No agent-server URL available, cannot load skills')
-                return []
+                return [], None
 
             # Build org config (authentication handled by app-server)
             org_config = await build_org_config(selected_repository, self.user_context)
@@ -115,17 +119,27 @@ class AppConversationServiceBase(AppConversationService, ABC):
                 load_org=True,
             )
 
+            # Load project hooks via agent-server (do not load user hooks in app-server)
+            project_hook_config = await load_project_hooks_from_agent_server(
+                agent_server_url=agent_server_url,
+                session_api_key=sandbox.session_api_key,
+                project_dir=project_dir,
+            )
+
+            # Return hook_config separately; caller will merge into agent payload.
+            hook_config = project_hook_config
+
             _logger.info(
                 f'Loaded {len(all_skills)} total skills from agent-server: '
                 f'{[s.name for s in all_skills]}'
             )
 
-            return all_skills
+            return all_skills, hook_config
 
         except Exception as e:
             _logger.warning(f'Failed to load skills: {e}', exc_info=True)
-            # Return empty list on failure - skills will be loaded again later if needed
-            return []
+            # Return empty result on failure - skills/hooks may be loaded again later if needed
+            return [], None
 
     def _create_agent_with_skills(self, agent, skills: list[Skill]):
         """Create or update agent with skills in its context.
@@ -196,12 +210,25 @@ class AppConversationServiceBase(AppConversationService, ABC):
         # Load and merge all skills
         # Extract agent_server_url from remote_workspace host
         agent_server_url = remote_workspace.host
-        all_skills = await self.load_and_merge_all_skills(
+        all_skills, hook_config = await self.load_and_merge_all_skills(
             sandbox, selected_repository, working_dir, agent_server_url
         )
 
         # Update agent with skills
         agent = self._create_agent_with_skills(agent, all_skills)
+
+        # Merge hook_config into agent payload (do not load user hooks here)
+        if hook_config is not None:
+            if agent.hook_config is not None:
+                agent = agent.model_copy(
+                    update={
+                        'hook_config': HookConfig.merge(
+                            [agent.hook_config, hook_config]
+                        )
+                    }
+                )
+            else:
+                agent = agent.model_copy(update={'hook_config': hook_config})
 
         return agent
 
