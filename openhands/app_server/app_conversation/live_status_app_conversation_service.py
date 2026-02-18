@@ -460,6 +460,12 @@ class LiveStatusAppConversationService(AppConversationServiceBase):
             )
             if conversation_url:
                 conversation_url += f'/api/conversations/{app_conversation_info.id.hex}'
+                # In local mode, rewrite localhost URLs to empty string
+                # so the frontend connects to the same origin (nginx proxy)
+                # which routes /sockets/ to the agent server
+                import re
+                if re.match(r'https?://(?:127\.0\.0\.1|localhost):\d+', conversation_url):
+                    conversation_url = ''
                 # Rewrite localhost URLs to go through the reverse proxy
                 # so the browser can reach the agent server
                 import re
