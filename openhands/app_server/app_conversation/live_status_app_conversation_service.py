@@ -465,7 +465,7 @@ class LiveStatusAppConversationService(AppConversationServiceBase):
                 import re
                 m = re.match(r'https?://(?:127\.0\.0\.1|localhost):(\d+)(.*)', conversation_url)
                 if m:
-                    conversation_url = f'/agent-proxy/{m.group(1)}{m.group(2)}'
+                    conversation_url = f'/agent/{m.group(1)}{m.group(2)}'
             session_api_key = sandbox.session_api_key
 
         return AppConversation(
