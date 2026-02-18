@@ -232,6 +232,8 @@ Your contributions ({contributor.commit_count} commit{'s' if contributor.commit_
 
 View the full release notes: {release_url}
 
+Please take a moment to verify that your changes are working as intended in production. If you notice any issues or unexpected behavior, we'd appreciate it if you could submit follow-up fixes as needed.
+
 Thank you for your valuable contributions to the project!
 
 Best regards,
@@ -258,6 +260,7 @@ The OpenHands Team
         .commits ul {{ margin: 0; padding-left: 20px; }}
         .commits li {{ margin: 8px 0; }}
         .cta {{ display: inline-block; background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px; }}
+        .notice {{ background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px 16px; margin: 20px 0; border-radius: 0 8px 8px 0; }}
         code {{ background: #e5e7eb; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }}
     </style>
 </head>
@@ -274,6 +277,11 @@ The OpenHands Team
             <div class="commits">
                 <strong>Your contributions ({contributor.commit_count} commit{'s' if contributor.commit_count > 1 else ''}):</strong>
                 <ul>{commits_html}</ul>
+            </div>
+
+            <div class="notice">
+                <strong>🔍 Please verify your changes</strong><br>
+                Take a moment to check that your changes are working as intended in production. If you notice any issues or unexpected behavior, please submit follow-up fixes as needed.
             </div>
 
             <p>Thank you for your valuable contributions to the project!</p>
