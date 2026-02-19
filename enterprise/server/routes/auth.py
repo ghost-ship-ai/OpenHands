@@ -160,8 +160,8 @@ async def keycloak_callback(
     error_description: Optional[str] = None,
 ):
     # Extract redirect URL, reCAPTCHA token, invitation token, and login method from state
-    redirect_url, recaptcha_token, invitation_token, login_method = _extract_oauth_state(
-        state
+    redirect_url, recaptcha_token, invitation_token, login_method = (
+        _extract_oauth_state(state)
     )
     if not redirect_url:
         redirect_url = str(request.base_url)
