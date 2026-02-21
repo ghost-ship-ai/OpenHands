@@ -109,7 +109,7 @@ function CreditsScreen() {
             <li>
               {t(I18nKey.CREDITS$THIRD_PARTY_PREFIX)}{" "}
               <ExternalLink href={CREDITS_URL}>
-                {t(I18nKey.CREDITS$CREDITS_MD)}
+                {t(I18nKey.CREDITS$TITLE)}
               </ExternalLink>
             </li>
           </ul>

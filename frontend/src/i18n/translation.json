@@ -16206,21 +16206,5 @@
     "tr": "Üçüncü taraf teşekkürleri ve açık kaynak lisansları için bkz.",
     "de": "Für Danksagungen an Dritte und Open-Source-Lizenzen siehe",
     "uk": "Щодо подяк стороннім проєктам та ліцензій з відкритим кодом див."
-  },
-  "CREDITS$CREDITS_MD": {
-    "en": "Credits",
-    "ja": "クレジット",
-    "zh-CN": "致谢",
-    "zh-TW": "鳴謝",
-    "ko-KR": "크레딧",
-    "no": "Krediteringer",
-    "it": "Crediti",
-    "pt": "Créditos",
-    "es": "Créditos",
-    "ar": "الشكر والتقدير",
-    "fr": "Crédits",
-    "tr": "Katkılar",
-    "de": "Credits",
-    "uk": "Подяки"
   }
 }
