@@ -22,7 +22,7 @@ from server.auth.constants import (  # noqa: E402
 )
 from server.constants import PERMITTED_CORS_ORIGINS  # noqa: E402
 from server.logger import logger  # noqa: E402
-from server.middleware import SetAuthCookieMiddleware  # noqa: E402
+from server.middleware import PostHogSessionMiddleware, SetAuthCookieMiddleware  # noqa: E402
 from server.rate_limit import setup_rate_limit_handler  # noqa: E402
 from server.routes.api_keys import api_router as api_keys_router  # noqa: E402
 from server.routes.auth import api_router, oauth_router  # noqa: E402
@@ -60,6 +60,17 @@ from server.verified_models.verified_model_router import (  # noqa: E402
 from server.verified_models.verified_model_router import (  # noqa: E402
     override_llm_models_dependency,
 )
+
+# Patch global config with SaaS lifespan BEFORE openhands.server.app is imported.
+# app.py reads get_app_lifespan_service() at module level (line ~69), so this
+# must execute first.
+from openhands.app_server.config import get_global_config  # noqa: E402
+from server.app_lifespan.saas_app_lifespan_service import (  # noqa: E402
+    SaasAppLifespanService,
+)
+
+_config = get_global_config()
+_config.lifespan = SaasAppLifespanService()
 
 from openhands.server.app import app as base_app  # noqa: E402
 from openhands.server.listen_socket import sio  # noqa: E402
@@ -149,6 +160,7 @@ base_app.add_middleware(
     allow_headers=['*'],
 )
 base_app.add_middleware(CacheControlMiddleware)
+base_app.middleware('http')(PostHogSessionMiddleware())
 base_app.middleware('http')(SetAuthCookieMiddleware())
 
 base_app.mount('/', SPAStaticFiles(directory=directory, html=True), name='dist')
