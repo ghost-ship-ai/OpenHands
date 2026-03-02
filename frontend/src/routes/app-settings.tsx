@@ -4,7 +4,10 @@ import { usePostHog } from "posthog-js/react";
 import { useSaveSettings } from "#/hooks/mutation/use-save-settings";
 import { useSettings } from "#/hooks/query/use-settings";
 import { AvailableLanguages } from "#/i18n";
-import { DEFAULT_SETTINGS, DEFAULT_MARKETPLACE_PATH } from "#/services/settings";
+import {
+  DEFAULT_SETTINGS,
+  DEFAULT_MARKETPLACE_PATH,
+} from "#/services/settings";
 import { BrandButton } from "#/components/features/settings/brand-button";
 import { SettingsSwitch } from "#/components/features/settings/settings-switch";
 import { SettingsInput } from "#/components/features/settings/settings-input";
@@ -88,9 +91,10 @@ function AppSettingsScreen() {
       .get("marketplace-path-input")
       ?.toString();
     // Empty string means no marketplace filtering, null means use default
-    const marketplacePath = marketplacePathValue === ""
-      ? null
-      : (marketplacePathValue || DEFAULT_MARKETPLACE_PATH);
+    const marketplacePath =
+      marketplacePathValue === ""
+        ? null
+        : marketplacePathValue || DEFAULT_MARKETPLACE_PATH;
 
     saveSettings(
       {
@@ -307,27 +311,26 @@ function AppSettingsScreen() {
 
           <div className="border-t border-t-tertiary pt-6 mt-2">
             <h3 className="text-lg font-medium mb-2">
-              Skills Settings
+              {t(I18nKey.SETTINGS$SKILLS_SETTINGS)}
             </h3>
             <p className="text-xs mb-4">
-              Configure which skills are loaded from the public skills marketplace.
+              {t(I18nKey.SETTINGS$SKILLS_SETTINGS_DESCRIPTION)}
             </p>
             <div className="flex flex-col gap-6">
               <SettingsInput
                 testId="marketplace-path-input"
                 name="marketplace-path-input"
                 type="text"
-                label="Marketplace Path"
-                defaultValue={settings.marketplace_path || DEFAULT_MARKETPLACE_PATH}
+                label={t(I18nKey.SETTINGS$MARKETPLACE_PATH)}
+                defaultValue={
+                  settings.marketplace_path || DEFAULT_MARKETPLACE_PATH
+                }
                 onChange={checkIfMarketplacePathHasChanged}
                 placeholder={DEFAULT_MARKETPLACE_PATH}
                 className="w-full max-w-[680px]"
               />
               <p className="text-xs text-gray-500">
-                Path to the marketplace JSON file that defines which skills are loaded.
-                Supports formats: &apos;marketplaces/default.json&apos; (default repo) or
-                &apos;owner/repo:path/to/marketplace.json&apos; (custom repo with cross-repo skill loading).
-                Leave empty to load all skills without filtering.
+                {t(I18nKey.SETTINGS$MARKETPLACE_PATH_DESCRIPTION)}
               </p>
             </div>
           </div>
