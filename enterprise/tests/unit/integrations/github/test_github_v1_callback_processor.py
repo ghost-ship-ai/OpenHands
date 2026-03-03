@@ -18,6 +18,7 @@ import pytest
 from integrations.github.github_v1_callback_processor import (
     GithubV1CallbackProcessor,
 )
+from openhands.sdk.event import ConversationStateUpdateEvent
 
 from openhands.app_server.app_conversation.app_conversation_models import (
     AppConversationInfo,
@@ -32,7 +33,6 @@ from openhands.app_server.sandbox.sandbox_models import (
     SandboxStatus,
 )
 from openhands.events.action.message import MessageAction
-from openhands.sdk.event import ConversationStateUpdateEvent
 
 # ---------------------------------------------------------------------------
 # Fixtures

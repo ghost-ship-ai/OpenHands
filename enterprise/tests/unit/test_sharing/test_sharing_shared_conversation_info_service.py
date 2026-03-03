@@ -5,6 +5,8 @@ from typing import AsyncGenerator
 from uuid import UUID, uuid4
 
 import pytest
+from openhands.sdk.llm import MetricsSnapshot
+from openhands.sdk.llm.utils.metrics import TokenUsage
 from server.sharing.shared_conversation_models import (
     SharedConversationSortOrder,
 )
@@ -26,8 +28,6 @@ from openhands.app_server.app_conversation.sql_app_conversation_info_service imp
 from openhands.app_server.user.specifiy_user_context import SpecifyUserContext
 from openhands.app_server.utils.sql_utils import Base
 from openhands.integrations.provider import ProviderType
-from openhands.sdk.llm import MetricsSnapshot
-from openhands.sdk.llm.utils.metrics import TokenUsage
 from openhands.storage.data_models.conversation_metadata import ConversationTrigger
 
 

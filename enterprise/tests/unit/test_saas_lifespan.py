@@ -1,6 +1,6 @@
 """Tests for SaasAppLifespanService."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -57,9 +57,7 @@ async def test_aexit_calls_shutdown_when_service_exists(mock_analytics_service):
     from server.app_lifespan.saas_app_lifespan_service import SaasAppLifespanService
 
     with (
-        patch(
-            'server.app_lifespan.saas_app_lifespan_service.init_analytics_service'
-        ),
+        patch('server.app_lifespan.saas_app_lifespan_service.init_analytics_service'),
         patch(
             'server.app_lifespan.saas_app_lifespan_service.get_analytics_service',
             return_value=mock_analytics_service,
@@ -78,9 +76,7 @@ async def test_aexit_does_not_raise_when_service_is_none():
     from server.app_lifespan.saas_app_lifespan_service import SaasAppLifespanService
 
     with (
-        patch(
-            'server.app_lifespan.saas_app_lifespan_service.init_analytics_service'
-        ),
+        patch('server.app_lifespan.saas_app_lifespan_service.init_analytics_service'),
         patch(
             'server.app_lifespan.saas_app_lifespan_service.get_analytics_service',
             return_value=None,
@@ -100,9 +96,7 @@ async def test_aexit_does_not_raise_on_shutdown_error(mock_analytics_service):
     mock_analytics_service.shutdown.side_effect = RuntimeError('connection closed')
 
     with (
-        patch(
-            'server.app_lifespan.saas_app_lifespan_service.init_analytics_service'
-        ),
+        patch('server.app_lifespan.saas_app_lifespan_service.init_analytics_service'),
         patch(
             'server.app_lifespan.saas_app_lifespan_service.get_analytics_service',
             return_value=mock_analytics_service,

@@ -14,7 +14,9 @@ onboarding_router = APIRouter(prefix='/api', tags=['Onboarding'])
 
 
 class OnboardingSubmission(BaseModel):
-    selections: dict[str, str]  # step_id -> option_id (e.g., {"step1": "software_engineer", "step2": "solo", "step3": "new_features"})
+    selections: dict[
+        str, str
+    ]  # step_id -> option_id (e.g., {"step1": "software_engineer", "step2": "solo", "step3": "new_features"})
 
 
 class OnboardingResponse(BaseModel):
@@ -39,7 +41,9 @@ async def submit_onboarding(
             user_obj = await UserStore.get_user_by_id_async(user_id)
             if user_obj:
                 consented = user_obj.user_consents_to_analytics is True
-                org_id_str = str(user_obj.current_org_id) if user_obj.current_org_id else None
+                org_id_str = (
+                    str(user_obj.current_org_id) if user_obj.current_org_id else None
+                )
                 analytics.capture(
                     distinct_id=user_id,
                     event=analytics_constants.ONBOARDING_COMPLETED,
@@ -57,13 +61,16 @@ async def submit_onboarding(
                         group_type='org',
                         group_key=org_id_str,
                         properties={
-                            'onboarding_completed_at': datetime.now(timezone.utc).isoformat(),
+                            'onboarding_completed_at': datetime.now(
+                                timezone.utc
+                            ).isoformat(),
                         },
                         distinct_id=user_id,
                         consented=consented,
                     )
     except Exception:
         import logging
+
         logging.getLogger(__name__).exception('analytics:onboarding_completed:failed')
 
     return OnboardingResponse(status='ok', redirect_url='/')

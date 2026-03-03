@@ -6,6 +6,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
+from openhands.agent_server.models import EventPage, EventSortOrder
+from openhands.sdk.llm import MetricsSnapshot
+from openhands.sdk.llm.utils.metrics import TokenUsage
 from server.sharing.google_cloud_shared_event_service import (
     GoogleCloudSharedEventService,
     GoogleCloudSharedEventServiceInjector,
@@ -15,10 +18,7 @@ from server.sharing.shared_conversation_info_service import (
 )
 from server.sharing.shared_conversation_models import SharedConversation
 
-from openhands.agent_server.models import EventPage, EventSortOrder
 from openhands.app_server.event.event_service import EventService
-from openhands.sdk.llm import MetricsSnapshot
-from openhands.sdk.llm.utils.metrics import TokenUsage
 
 
 @pytest.fixture

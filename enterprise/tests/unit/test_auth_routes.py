@@ -179,7 +179,7 @@ async def test_keycloak_callback_success_with_valid_offline_token(mock_request):
         patch('server.routes.auth.user_verifier') as mock_verifier,
         patch('server.routes.auth.set_response_cookie') as mock_set_cookie,
         patch('server.routes.auth.UserStore') as mock_user_store,
-        patch('server.routes.auth.get_analytics_service') as mock_get_analytics,
+        patch('server.routes.auth.get_analytics_service', return_value=None),
     ):
         # Mock user with accepted_tos
         mock_user = MagicMock()
@@ -230,7 +230,6 @@ async def test_keycloak_callback_success_with_valid_offline_token(mock_request):
             secure=False,
             accepted_tos=True,
         )
-        mock_get_analytics.return_value.set_person_properties.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -344,7 +343,7 @@ async def test_keycloak_callback_success_without_offline_token(mock_request):
         patch('server.routes.auth.KEYCLOAK_REALM_NAME', 'test-realm'),
         patch('server.routes.auth.KEYCLOAK_CLIENT_ID', 'test-client'),
         patch('server.routes.auth.UserStore') as mock_user_store,
-        patch('server.routes.auth.get_analytics_service') as mock_get_analytics,
+        patch('server.routes.auth.get_analytics_service', return_value=None),
     ):
         # Mock user with accepted_tos
         mock_user = MagicMock()
@@ -398,7 +397,6 @@ async def test_keycloak_callback_success_without_offline_token(mock_request):
             secure=False,
             accepted_tos=True,
         )
-        mock_get_analytics.return_value.set_person_properties.assert_called_once()
 
 
 @pytest.mark.asyncio

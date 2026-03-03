@@ -995,9 +995,7 @@ async def switch_org(
         if analytics:
             try:
                 user = await UserStore.get_user_by_id_async(user_id)
-                consented = (
-                    user.user_consents_to_analytics is True if user else False
-                )
+                consented = user.user_consents_to_analytics is True if user else False
                 analytics.set_person_properties(
                     distinct_id=user_id,
                     properties={

@@ -15,6 +15,8 @@ from typing import AsyncGenerator
 from uuid import UUID
 
 from fastapi import Request
+from openhands.sdk.llm import MetricsSnapshot
+from openhands.sdk.llm.utils.metrics import TokenUsage
 from server.sharing.shared_conversation_info_service import (
     SharedConversationInfoService,
     SharedConversationInfoServiceInjector,
@@ -33,8 +35,6 @@ from openhands.app_server.app_conversation.sql_app_conversation_info_service imp
 )
 from openhands.app_server.services.injector import InjectorState
 from openhands.integrations.provider import ProviderType
-from openhands.sdk.llm import MetricsSnapshot
-from openhands.sdk.llm.utils.metrics import TokenUsage
 
 logger = logging.getLogger(__name__)
 
