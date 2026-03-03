@@ -215,7 +215,24 @@ async def keycloak_callback(
         )
 
     # These tokens are offline access tokens - store them!
-    await token_manager.store_offline_token(keycloak_user_id, keycloak_refresh_token)
+    try:
+        await token_manager.store_offline_token(
+            keycloak_user_id, keycloak_refresh_token
+        )
+    except Exception as e:
+        logger.error(
+            'failed_to_store_offline_token',
+            extra={
+                'keycloak_user_id': keycloak_user_id,
+                'error': str(e),
+            },
+            exc_info=True,
+        )
+        return _html_response(
+            title='Error',
+            description='Failed to store authentication token. Please try again.',
+            status_code=500,
+        )
 
     idp: str = user_info.get('identity_provider', ProviderType.GITHUB)
     idp_type = 'oidc'

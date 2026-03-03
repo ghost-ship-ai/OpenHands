@@ -73,12 +73,27 @@ class SlackManager(Manager[SlackViewInterface]):
 
             # slack_view.slack_to_openhands_user = slack_user # attach user auth info to view
 
-        saas_user_auth = None
-        if slack_user:
-            saas_user_auth = await get_saas_user_auth(
-                slack_user.keycloak_user_id, self.token_manager
+        if not slack_user:
+            logger.info(
+                'slack_user_not_found',
+                extra={'slack_user_id': slack_user_id},
             )
-            # slack_view.saas_user_auth = await self._get_user_auth(slack_view.slack_to_openhands_user.keycloak_user_id)
+            return None, None
+
+        saas_user_auth = await get_saas_user_auth(
+            slack_user.keycloak_user_id, self.token_manager
+        )
+        # slack_view.saas_user_auth = await self._get_user_auth(slack_view.slack_to_openhands_user.keycloak_user_id)
+
+
+        if not saas_user_auth:
+            logger.warning(
+                'slack_user_missing_auth',
+                extra={
+                    'slack_user_id': slack_user_id,
+                    'keycloak_user_id': slack_user.keycloak_user_id,
+                },
+            )
 
         return slack_user, saas_user_auth
 
@@ -202,7 +217,14 @@ class SlackManager(Manager[SlackViewInterface]):
             link = authorize_url_generator.generate(state)
             msg = self.login_link.format(link)
 
-            logger.info('slack_not_yet_authenticated')
+            logger.info(
+                'slack_not_yet_authenticated',
+                extra={
+                    'slack_user_id': message.message.get('slack_user_id'),
+                    'has_slack_user': slack_user is not None,
+                    'has_saas_user_auth': saas_user_auth is not None,
+                },
+            )
             await self.send_message(msg, slack_view, ephemeral=True)
             return
 
