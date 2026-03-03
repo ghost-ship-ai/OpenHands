@@ -34,8 +34,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Activation & Quality Events
 
-- [ ] **ACTV-01**: `user activated` captured server-side when user's first conversation reaches FINISHED state, with conversation_id, time_to_activate_seconds, llm_model, trigger
-- [ ] **ACTV-02**: `git provider connected` captured server-side on successful provider token storage with provider_type, org_id
+- [x] **ACTV-01**: `user activated` captured server-side when user's first conversation reaches FINISHED state, with conversation_id, time_to_activate_seconds, llm_model, trigger
+- [x] **ACTV-02**: `git provider connected` captured server-side on successful provider token storage with provider_type, org_id
 - [x] **ACTV-03**: `onboarding completed` captured server-side with org group association, role, org_size, use_case
 
 ### Client-Side Cleanup
@@ -102,8 +102,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BIZZ-04 | Phase 2 | Complete |
 | BIZZ-05 | Phase 2 | Complete |
 | BIZZ-06 | Phase 2 | Complete |
-| ACTV-01 | Phase 4 | Pending |
-| ACTV-02 | Phase 4 | Pending |
+| ACTV-01 | Phase 4 | Complete |
+| ACTV-02 | Phase 4 | Complete |
 | ACTV-03 | Phase 4 | Complete |
 | CLEN-01 | Phase 3 | Complete |
 | CLEN-02 | Phase 3 | Complete |

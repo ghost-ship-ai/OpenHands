@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-03T01:00:00.000Z"
+last_updated: "2026-03-03T13:23:15.178Z"
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 12
-  completed_plans: 11
+  total_plans: 13
+  completed_plans: 12
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-03-03)
 ## Current Position
 
 Phase: 4 of 4 (Activation and Dashboards) — IN PROGRESS
-Plan: 2 of N in current phase (COMPLETE)
+Plan: 2 of 3 in current phase (04-01 and 04-02 complete, 04-03 remaining)
 Status: In Progress
-Last activity: 2026-03-03 — Completed plan 04-02 (Onboarding submission endpoint + frontend hook wired to POST /api/onboarding)
+Last activity: 2026-03-03 — Completed plan 04-01 (USER_ACTIVATED and GIT_PROVIDER_CONNECTED activation events)
 
 Progress: [█████████░] ~91% overall
 
@@ -56,6 +56,7 @@ Progress: [█████████░] ~91% overall
 | Phase 01-foundation P02 | 3 | 2 tasks | 6 files |
 | Phase 02-business-events P02 | 2 | 2 tasks | 2 files |
 | Phase 03-client-cleanup P02 | 25 | 2 tasks | 16 files |
+| Phase 04-activation-and-dashboards P01 | 2 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -99,6 +100,9 @@ Recent decisions affecting current work:
 - [04-02]: No DB persistence of onboarding responses — analytics event IS the persistence; DB model deferred if product needs queryable data outside PostHog
 - [04-02]: redirect_url hardcoded to '/' on backend; frontend reads from response for future flexibility without frontend changes
 - [04-02]: group_identify fires only when org_id_str is non-null — personal-org users still get user-level ONBOARDING_COMPLETED event
+- [Phase 04-01]: ACTV-01 gated on FINISHED state only — STOPPED (user cancelled) is not activation
+- [Phase 04-01]: Exclude current conversation_id from count query: StoredConversationMetadataSaas row exists at conversation start, prior_count==0 means first conversation
+- [Phase 04-01]: ACTV-02 only fires when token_value.token is truthy: host-only updates do not produce git provider connected event
 
 ### Pending Todos
 
@@ -112,5 +116,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-03
-Stopped at: Completed 04-02-PLAN.md (Onboarding endpoint + frontend hook wired)
-Resume file: .planning/phases/04-activation-and-dashboards/04-03-PLAN.md (if exists)
+Stopped at: Completed 04-01-PLAN.md (USER_ACTIVATED and GIT_PROVIDER_CONNECTED activation events)
+Resume file: .planning/phases/04-activation-and-dashboards/04-03-PLAN.md
