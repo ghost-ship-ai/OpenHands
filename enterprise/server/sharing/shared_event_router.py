@@ -20,12 +20,20 @@ def get_shared_event_service_injector() -> SharedEventServiceInjector:
     """Get the appropriate SharedEventServiceInjector based on configuration.
 
     Set SHARED_EVENT_STORAGE_PROVIDER environment variable to:
-    - "aws" for AWS S3
-    - "gcp" for Google Cloud Storage (default)
-    """
-    provider = os.environ.get('SHARED_EVENT_STORAGE_PROVIDER', 'gcp').lower()
+    - "aws" or "s3" for AWS S3
+    - "gcp" or "google_cloud" for Google Cloud Storage (default)
 
-    if provider == 'aws':
+    If not set, falls back to FILE_STORE environment variable:
+    - "s3" -> AWS S3
+    - "google_cloud" -> Google Cloud Storage (default)
+    """
+    provider = os.environ.get('SHARED_EVENT_STORAGE_PROVIDER', '').lower()
+
+    # If not explicitly set, fall back to FILE_STORE
+    if not provider:
+        provider = os.environ.get('FILE_STORE', 'google_cloud').lower()
+
+    if provider in ('aws', 's3'):
         from server.sharing.aws_shared_event_service import (
             AwsSharedEventServiceInjector,
         )
