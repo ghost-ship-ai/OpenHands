@@ -161,11 +161,11 @@ class TestGetSharedEventServiceInjector:
             os.environ,
             {
                 'SHARED_EVENT_STORAGE_PROVIDER': '',
-                'FILE_STORE': 's3',
+                'FILE_STORE': 'google_cloud',
             },
             clear=True,
         ):
             injector = get_shared_event_service_injector()
 
-            # Should fall back to FILE_STORE when SHARED_EVENT_STORAGE_PROVIDER is empty
-            assert isinstance(injector, AwsSharedEventServiceInjector)
+            # Should default to GCP for unknown providers
+            assert isinstance(injector, GoogleCloudSharedEventServiceInjector)
