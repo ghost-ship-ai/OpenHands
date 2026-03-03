@@ -15,7 +15,9 @@ from integrations.utils import (
     CONVERSATION_URL,
     HOST_URL,
     OPENHANDS_RESOLVER_TEMPLATES_DIR,
+    UserNotRegisteredError,
     get_session_expired_message,
+    get_user_not_registered_message,
 )
 from jinja2 import Environment, FileSystemLoader
 from pydantic import SecretStr
@@ -44,6 +46,33 @@ class GitlabManager(Manager):
     def _confirm_incoming_source_type(self, message: Message):
         if message.source != SourceType.GITLAB:
             raise ValueError(f'Unexpected message source {message.source}')
+
+    async def _send_user_not_registered_message(
+        self, message: Message, username: str
+    ) -> None:
+        """Send a helpful message to an unregistered user.
+
+        Args:
+            message: The incoming message containing the payload
+            username: The username of the unregistered user
+
+        Note:
+            Currently this method only logs the message since we cannot send
+            GitLab messages without a registered user's token. In the future,
+            a bot/admin token could be used to actually post the comment.
+        """
+        payload = message.message['payload']
+        project_id = str(payload['object_attributes']['project_id'])
+
+        # Generate the message for logging purposes
+        msg = get_user_not_registered_message(username)
+
+        # Log that we would send this message
+        # Note: Actually sending requires admin/bot access which may not be available
+        logger.info(
+            f'[GitLab] Would send user not registered message to {username} '
+            f'for project {project_id}: {msg}'
+        )
 
     async def _user_has_write_access_to_repo(
         self, project_id: str, user_id: str
@@ -79,9 +108,18 @@ class GitlabManager(Manager):
     async def receive_message(self, message: Message):
         self._confirm_incoming_source_type(message)
         if await self.is_job_requested(message):
-            gitlab_view = await GitlabFactory.create_gitlab_view_from_payload(
-                message, self.token_manager
-            )
+            try:
+                gitlab_view = await GitlabFactory.create_gitlab_view_from_payload(
+                    message, self.token_manager
+                )
+            except UserNotRegisteredError as e:
+                logger.warning(
+                    f'[GitLab] User {e.username} (id={e.user_id}) is not registered with OpenHands Cloud'
+                )
+                # Send a helpful message to the user
+                await self._send_user_not_registered_message(message, e.username)
+                return
+
             logger.info(
                 f'[GitLab] Creating job for {gitlab_view.user_info.username} in {gitlab_view.full_repo_name}#{gitlab_view.issue_number}'
             )

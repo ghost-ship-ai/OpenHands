@@ -64,6 +64,44 @@ def get_session_expired_message(username: str | None = None) -> str:
     return f'Your session has expired. Please login again at [OpenHands Cloud]({HOST_URL}) and try again.'
 
 
+def get_user_not_registered_message(username: str | None = None) -> str:
+    """Get a user-friendly message for users not registered with OpenHands Cloud.
+
+    Used by integrations to notify users when they attempt to interact with
+    OpenHands but haven't registered with OpenHands Cloud yet.
+
+    Args:
+        username: Optional username to mention in the message. If provided,
+                  the message will include @username prefix (used by Git providers
+                  like GitHub, GitLab).
+
+    Returns:
+        A formatted user not registered message
+    """
+    if username:
+        return f"@{username} it looks like you haven't registered with OpenHands Cloud yet. Please sign up at [OpenHands Cloud]({HOST_URL}) and connect your GitHub/GitLab account to get started!"
+    return f"It looks like you haven't registered with OpenHands Cloud yet. Please sign up at [OpenHands Cloud]({HOST_URL}) and connect your GitHub/GitLab account to get started!"
+
+
+class UserNotRegisteredError(Exception):
+    """Exception raised when a user is not registered with OpenHands Cloud.
+
+    This exception is used by integrations when processing webhooks from users
+    who haven't registered with OpenHands Cloud yet.
+
+    Attributes:
+        username: The username of the unregistered user
+        user_id: The provider-specific user ID
+    """
+
+    def __init__(self, username: str, user_id: int):
+        self.username = username
+        self.user_id = user_id
+        super().__init__(
+            f'User {username} (id={user_id}) is not registered with OpenHands Cloud'
+        )
+
+
 # Toggle for solvability report feature
 ENABLE_SOLVABILITY_ANALYSIS = (
     os.getenv('ENABLE_SOLVABILITY_ANALYSIS', 'false').lower() == 'true'

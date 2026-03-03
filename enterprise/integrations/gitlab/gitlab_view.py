@@ -2,7 +2,12 @@ from dataclasses import dataclass
 
 from integrations.models import Message
 from integrations.types import ResolverViewInterface, UserData
-from integrations.utils import HOST, get_oh_labels, has_exact_mention
+from integrations.utils import (
+    HOST,
+    UserNotRegisteredError,
+    get_oh_labels,
+    has_exact_mention,
+)
 from jinja2 import Environment
 from server.auth.token_manager import TokenManager
 from server.config import get_config
@@ -317,6 +322,10 @@ class GitlabFactory:
         keycloak_user_id = await token_manager.get_user_id_from_idp_user_id(
             user_id, ProviderType.GITLAB
         )
+
+        # Check if user is registered with OpenHands Cloud
+        if keycloak_user_id is None:
+            raise UserNotRegisteredError(username=username, user_id=user_id)
 
         user_info = UserData(
             user_id=user_id, username=username, keycloak_user_id=keycloak_user_id

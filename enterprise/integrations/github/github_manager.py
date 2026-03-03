@@ -22,6 +22,7 @@ from integrations.utils import (
     HOST_URL,
     OPENHANDS_RESOLVER_TEMPLATES_DIR,
     get_session_expired_message,
+    get_user_not_registered_message,
 )
 from integrations.v1_utils import get_saas_user_auth
 from jinja2 import Environment, FileSystemLoader
@@ -179,9 +180,39 @@ class GithubManager(Manager):
         if await self.is_job_requested(message):
             payload = message.message.get('payload', {})
             user_id = payload['sender']['id']
+            username = payload['sender']['login']
             keycloak_user_id = await self.token_manager.get_user_id_from_idp_user_id(
                 user_id, ProviderType.GITHUB
             )
+
+            # Check if user is registered with OpenHands Cloud
+            if keycloak_user_id is None:
+                logger.warning(
+                    f'[GitHub] User {username} (id={user_id}) is not registered with OpenHands Cloud'
+                )
+                # Get installation token to post a helpful message
+                installation_id = message.message.get('installation')
+                installation_token = self._get_installation_access_token(
+                    installation_id
+                )
+                repo_obj = payload.get('repository', {})
+                full_repo_name = self._get_full_repo_name(repo_obj)
+
+                # Determine where to post the message (issue or PR)
+                issue_number = None
+                if 'issue' in payload:
+                    issue_number = payload['issue']['number']
+                elif 'pull_request' in payload:
+                    issue_number = payload['pull_request']['number']
+
+                if issue_number:
+                    with Github(auth=Auth.Token(installation_token)) as github_client:
+                        repo = github_client.get_repo(full_repo_name)
+                        issue = repo.get_issue(number=issue_number)
+                        msg = get_user_not_registered_message(username)
+                        issue.create_comment(msg)
+                return
+
             github_view = await GithubFactory.create_github_view_from_payload(
                 message, keycloak_user_id
             )
