@@ -129,12 +129,12 @@ class SaasNestedConversationManager(ConversationManager):
     async def attach_to_conversation(
         self, sid: str, user_id: str | None = None
     ) -> ServerConversation | None:
-        # Not supported - clients should connect directly to the nested server!
-        raise ValueError('unsupported_operation')
+        # Not supported - clients should connect directly to the nested server
+        return None
 
     async def detach_from_conversation(self, conversation: ServerConversation):
-        # Not supported - clients should connect directly to the nested server!
-        raise ValueError('unsupported_operation')
+        # Not supported - clients should connect directly to the nested server
+        pass
 
     async def join_conversation(
         self,
