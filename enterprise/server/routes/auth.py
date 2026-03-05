@@ -443,7 +443,9 @@ async def keycloak_callback(
         from storage.org_store import OrgStore
 
         current_org = (
-            OrgStore.get_org_by_id(user.current_org_id) if user.current_org_id else None
+            await OrgStore.get_org_by_id(user.current_org_id)
+            if user.current_org_id
+            else None
         )
 
         # Set person properties (SaaS only, consent-gated inside service)
