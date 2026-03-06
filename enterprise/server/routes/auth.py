@@ -38,7 +38,7 @@ from storage.database import a_session_maker
 from storage.user import User
 from storage.user_store import UserStore
 
-from openhands.analytics import analytics_constants, get_analytics_service
+from openhands.analytics import get_analytics_service
 from openhands.core.logger import openhands_logger as logger
 from openhands.integrations.provider import ProviderHandler
 from openhands.integrations.service_types import ProviderType, TokenResponse
@@ -262,19 +262,18 @@ async def keycloak_callback(
                 consented = (
                     user.user_consents_to_analytics is True
                 )  # None = undecided = not consented
-                analytics.capture(
+                org_id_str = str(user.current_org_id) if user.current_org_id else None
+
+                analytics.track_user_signed_up(
                     distinct_id=user_id,
-                    event=analytics_constants.USER_SIGNED_UP,
-                    properties={
-                        'idp': user_info.get('identity_provider', 'keycloak'),
-                        'email_domain': email.split('@')[1]
-                        if email and '@' in email
-                        else None,
-                        'invitation_source': 'invitation'
-                        if invitation_token
-                        else 'self_signup',
-                    },
-                    org_id=str(user.current_org_id) if user.current_org_id else None,
+                    idp=user_info.get('identity_provider', 'keycloak'),
+                    email_domain=email.split('@')[1]
+                    if email and '@' in email
+                    else None,
+                    invitation_source='invitation'
+                    if invitation_token
+                    else 'self_signup',
+                    org_id=org_id_str,
                     consented=consented,
                 )
                 analytics.set_person_properties(
@@ -438,8 +437,9 @@ async def keycloak_callback(
         consented = (
             user.user_consents_to_analytics is True
         )  # None = undecided = not consented
+        org_id_str = str(user.current_org_id) if user.current_org_id else None
 
-        # Load current org for person properties
+        # Load current org for identify_user
         from storage.org_store import OrgStore
 
         current_org = (
@@ -448,25 +448,7 @@ async def keycloak_callback(
             else None
         )
 
-        # Set person properties (SaaS only, consent-gated inside service)
-        analytics.set_person_properties(
-            distinct_id=user_id,
-            properties={
-                'email': email,
-                'org_id': str(user.current_org_id) if user.current_org_id else None,
-                'org_name': current_org.name if current_org else None,
-                'plan_tier': None,  # plan_tier not yet on Org model — deferred to future phase
-                'created_at': str(user.accepted_tos)
-                if hasattr(user, 'accepted_tos') and user.accepted_tos
-                else None,
-                'idp': idp,
-                'last_login_at': datetime.now(timezone.utc).isoformat(),
-            },
-            consented=consented,
-        )
-
-        # Group identify for all orgs the user belongs to
-        # user.org_members is eagerly loaded via joinedload in UserStore.get_user_by_id
+        # Load org data for identify_user (orgs list with member_count)
         org_member_ids = (
             [om.org_id for om in user.org_members] if user.org_members else []
         )
@@ -474,36 +456,32 @@ async def keycloak_callback(
 
         from storage.org_member_store import OrgMemberStore
 
+        orgs_data = []
         for org in user_orgs:
             try:
                 member_count = await OrgMemberStore.get_org_members_count(org_id=org.id)
             except Exception:
                 logger.exception(
-                    'auth:group_identify:member_count_failed',
+                    'auth:identify_user:member_count_failed',
                     extra={'user_id': user_id, 'org_id': str(org.id)},
                 )
                 member_count = None
+            orgs_data.append({'id': str(org.id), 'name': org.name, 'member_count': member_count})
 
-            analytics.group_identify(
-                group_type='org',
-                group_key=str(org.id),
-                properties={
-                    'org_name': org.name,
-                    'plan_tier': None,  # plan_tier not yet on Org model — deferred to future phase
-                    'created_at': None,  # created_at not yet on Org model — deferred to future phase
-                    'member_count': member_count,
-                    # credit_balance: deferred to Phase 2 (requires billing infrastructure)
-                },
-                distinct_id=user_id,
-                consented=consented,
-            )
-
-        # Capture login event
-        analytics.capture(
+        analytics.identify_user(
             distinct_id=user_id,
-            event='user logged in',
-            properties={'idp': idp},
-            org_id=str(user.current_org_id) if user.current_org_id else None,
+            consented=consented,
+            email=email,
+            org_id=org_id_str,
+            org_name=current_org.name if current_org else None,
+            idp=idp,
+            orgs=orgs_data,
+        )
+
+        analytics.track_user_logged_in(
+            distinct_id=user_id,
+            idp=idp,
+            org_id=org_id_str,
             consented=consented,
         )
 
