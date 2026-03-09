@@ -34,7 +34,7 @@ dependencies = [
   "dirhash",
   "docker",
   "fastapi",
-  "fastmcp>=2.12.4,<2.12.5",
+  "fastmcp>=3.0.0",
   "google-api-python-client>=2.164",
   "google-auth-httplib2",
   "google-auth-oauthlib",
@@ -57,9 +57,9 @@ dependencies = [
   "numpy",
   "openai==2.8",
   "openhands-aci==0.3.3",
-  "openhands-agent-server==1.11.5",
-  "openhands-sdk==1.11.5",
-  "openhands-tools==1.11.5",
+  "openhands-agent-server>=1.11.5,<1.13",
+  "openhands-sdk>=1.11.5,<1.13",
+  "openhands-tools>=1.11.5,<1.13",
   "opentelemetry-api>=1.33.1",
   "opentelemetry-exporter-otlp-proto-grpc>=1.33.1",
   "pathspec>=0.12.1",
@@ -141,6 +141,13 @@ runtime = [
   "jupyterlab",
   "notebook",
 ]
+
+[tool.uv.sources]
+# Use the exact software-agent-sdk commit from PR #2253 while this OpenHands branch is being live-tested.
+openhands-agent-server = { git = "https://github.com/OpenHands/software-agent-sdk.git", subdirectory = "openhands-agent-server", rev = "4170ccad13d255831ddc0bfffe31ab59c23493c1" }
+openhands-sdk = { git = "https://github.com/OpenHands/software-agent-sdk.git", subdirectory = "openhands-sdk", rev = "4170ccad13d255831ddc0bfffe31ab59c23493c1" }
+openhands-tools = { git = "https://github.com/OpenHands/software-agent-sdk.git", subdirectory = "openhands-tools", rev = "4170ccad13d255831ddc0bfffe31ab59c23493c1" }
+
 
 [tool.poetry]
 name = "openhands-ai"
