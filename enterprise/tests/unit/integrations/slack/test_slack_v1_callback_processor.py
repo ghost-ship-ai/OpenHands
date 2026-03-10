@@ -16,13 +16,13 @@ from integrations.slack.slack_v1_callback_processor import (
 )
 from integrations.utils import CONVERSATION_URL
 from integrations.v1_utils import BUDGET_EXCEEDED_USER_MESSAGE
-from openhands.sdk.event import ConversationStateUpdateEvent
 
 from openhands.app_server.event_callback.event_callback_models import EventCallback
 from openhands.app_server.event_callback.event_callback_result_models import (
     EventCallbackResultStatus,
 )
 from openhands.events.action.message import MessageAction
+from openhands.sdk.event import ConversationStateUpdateEvent
 
 # ---------------------------------------------------------------------------
 # Fixtures

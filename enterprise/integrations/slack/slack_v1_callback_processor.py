@@ -3,13 +3,11 @@ from uuid import UUID
 
 from integrations.utils import CONVERSATION_URL
 from integrations.v1_utils import handle_callback_error
-from openhands.agent_server.models import EventSortOrder
-from openhands.sdk import Event, MessageEvent, TextContent
-from openhands.sdk.event import ConversationStateUpdateEvent
 from pydantic import Field
 from slack_sdk import WebClient
 from storage.slack_team_store import SlackTeamStore
 
+from openhands.agent_server.models import EventSortOrder
 from openhands.app_server.event_callback.event_callback_models import (
     EventCallback,
     EventCallbackProcessor,
@@ -18,6 +16,8 @@ from openhands.app_server.event_callback.event_callback_result_models import (
     EventCallbackResult,
     EventCallbackResultStatus,
 )
+from openhands.sdk import Event, MessageEvent, TextContent
+from openhands.sdk.event import ConversationStateUpdateEvent
 
 _logger = logging.getLogger(__name__)
 
