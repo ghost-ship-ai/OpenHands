@@ -2,6 +2,7 @@ import logging
 from uuid import UUID
 
 from integrations.utils import CONVERSATION_URL
+from integrations.v1_utils import handle_callback_error
 from pydantic import Field
 from slack_sdk import WebClient
 from storage.slack_team_store import SlackTeamStore
@@ -20,16 +21,16 @@ from openhands.sdk.event import ConversationStateUpdateEvent
 
 _logger = logging.getLogger(__name__)
 
-ASSISTANT_SOURCE = 'agent'
+ASSISTANT_SOURCE = "agent"
 FALLBACK_MESSAGE = (
-    'No response from the agent.\n\n<{conversation_url}|See the conversation>'
+    "No response from the agent.\n\n<{conversation_url}|See the conversation>"
 )
 
 
 def _slack_conversation_link(conversation_id: UUID) -> str:
     """Format conversation URL for Slack mrkdwn (<url|label>)."""
     url = CONVERSATION_URL.format(conversation_id)
-    return f'<{url}|See the conversation>'
+    return f"<{url}|See the conversation>"
 
 
 class SlackV1CallbackProcessor(EventCallbackProcessor):
@@ -49,10 +50,10 @@ class SlackV1CallbackProcessor(EventCallbackProcessor):
             return None
 
         # Only act when execution has finished
-        if not (event.key == 'execution_status' and event.value == 'finished'):
+        if not (event.key == "execution_status" and event.value == "finished"):
             return None
 
-        _logger.info('[Slack V1] Callback agent state was %s', event)
+        _logger.info("[Slack V1] Callback agent state was %s", event)
 
         try:
             message = await self._get_final_assistant_message(conversation_id)
@@ -66,18 +67,15 @@ class SlackV1CallbackProcessor(EventCallbackProcessor):
                 detail=message,
             )
         except Exception as e:
-            _logger.exception('[Slack V1] Error processing callback: %s', e)
-
-            # Only try to post error to Slack if we have basic requirements
-            try:
-                await self._post_message_to_slack(
-                    f'OpenHands encountered an error: **{str(e)}**.\n\n'
-                    f'{_slack_conversation_link(conversation_id)} for more information.'
-                )
-            except Exception as post_error:
-                _logger.warning(
-                    '[Slack V1] Failed to post error message to Slack: %s', post_error
-                )
+            can_post_error = bool(self.slack_view_data.get("team_id"))
+            await handle_callback_error(
+                error=e,
+                conversation_id=conversation_id,
+                service_name="Slack",
+                service_logger=_logger,
+                can_post_error=can_post_error,
+                post_error_func=self._post_message_to_slack,
+            )
 
             return EventCallbackResult(
                 status=EventCallbackResultStatus.ERROR,
@@ -92,7 +90,7 @@ class SlackV1CallbackProcessor(EventCallbackProcessor):
     # -------------------------------------------------------------------------
 
     async def _get_bot_access_token(self) -> str | None:
-        team_id = self.slack_view_data.get('team_id')
+        team_id = self.slack_view_data.get("team_id")
         if team_id is None:
             return None
         slack_team_store = SlackTeamStore.get_instance()
@@ -104,11 +102,11 @@ class SlackV1CallbackProcessor(EventCallbackProcessor):
         """Post a message to the configured Slack channel (threaded reply)."""
         bot_access_token = await self._get_bot_access_token()
         if not bot_access_token:
-            raise RuntimeError('Missing Slack bot access token')
+            raise RuntimeError("Missing Slack bot access token")
 
-        channel_id = self.slack_view_data['channel_id']
-        thread_ts = self.slack_view_data.get('thread_ts') or self.slack_view_data.get(
-            'message_ts'
+        channel_id = self.slack_view_data["channel_id"]
+        thread_ts = self.slack_view_data.get("thread_ts") or self.slack_view_data.get(
+            "message_ts"
         )
 
         client = WebClient(token=bot_access_token)
@@ -122,17 +120,17 @@ class SlackV1CallbackProcessor(EventCallbackProcessor):
                 unfurl_media=False,
             )
 
-            if not response['ok']:
+            if not response["ok"]:
                 raise RuntimeError(
-                    f'Slack API error: {response.get("error", "Unknown error")}'
+                    f"Slack API error: {response.get('error', 'Unknown error')}"
                 )
 
             _logger.info(
-                '[Slack V1] Successfully posted message to channel %s', channel_id
+                "[Slack V1] Successfully posted message to channel %s", channel_id
             )
 
         except Exception as e:
-            _logger.error('[Slack V1] Failed to post message to Slack: %s', e)
+            _logger.error("[Slack V1] Failed to post message to Slack: %s", e)
             raise
 
     # -------------------------------------------------------------------------
@@ -158,13 +156,13 @@ class SlackV1CallbackProcessor(EventCallbackProcessor):
             async with get_event_service(state) as event_service:
                 page = await event_service.search_events(
                     conversation_id=conversation_id,
-                    kind__eq='MessageEvent',
+                    kind__eq="MessageEvent",
                     sort_order=EventSortOrder.TIMESTAMP_DESC,
                     limit=50,
                 )
         except Exception as e:
             _logger.warning(
-                '[Slack V1] Failed to search events for %s: %s',
+                "[Slack V1] Failed to search events for %s: %s",
                 conversation_id,
                 e,
                 exc_info=True,
@@ -183,10 +181,10 @@ class SlackV1CallbackProcessor(EventCallbackProcessor):
                 continue
             if evt.source != ASSISTANT_SOURCE:
                 continue
-            llm_message = getattr(evt, 'llm_message', None)
+            llm_message = getattr(evt, "llm_message", None)
             if llm_message is not None:
-                role = getattr(llm_message, 'role', None)
-                if role is not None and role != 'assistant':
+                role = getattr(llm_message, "role", None)
+                if role is not None and role != "assistant":
                     continue
             text = self._extract_message_text(evt)
             if text:
@@ -199,10 +197,10 @@ class SlackV1CallbackProcessor(EventCallbackProcessor):
     @staticmethod
     def _extract_message_text(evt: MessageEvent) -> str | None:
         """Extract plain text from a MessageEvent's llm_message content blocks."""
-        llm_message = getattr(evt, 'llm_message', None)
+        llm_message = getattr(evt, "llm_message", None)
         if llm_message is None:
             return None
-        content_blocks = getattr(llm_message, 'content', None)
+        content_blocks = getattr(llm_message, "content", None)
         if not content_blocks:
             return None
         parts: list[str] = []
@@ -211,4 +209,4 @@ class SlackV1CallbackProcessor(EventCallbackProcessor):
                 text = block.text.strip()
                 if text:
                     parts.append(text)
-        return '\n\n'.join(parts) if parts else None
+        return "\n\n".join(parts) if parts else None
