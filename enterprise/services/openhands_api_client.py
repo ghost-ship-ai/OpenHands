@@ -12,6 +12,19 @@ import httpx
 logger = logging.getLogger('saas.automation.api_client')
 
 
+def _raise_with_body(resp: httpx.Response) -> None:
+    """Call raise_for_status, enriching the error with the response body."""
+    try:
+        resp.raise_for_status()
+    except httpx.HTTPStatusError as e:
+        error_body = resp.text[:500] if resp.text else 'no response body'
+        raise httpx.HTTPStatusError(
+            f'{e.args[0]} — Response: {error_body}',
+            request=e.request,
+            response=e.response,
+        ) from e
+
+
 class OpenHandsAPIClient:
     """Async HTTP client for the OpenHands V1 API."""
 
@@ -50,7 +63,7 @@ class OpenHandsAPIClient:
             },
             headers={'Authorization': f'Bearer {api_key}'},
         )
-        resp.raise_for_status()
+        _raise_with_body(resp)
         return resp.json()
 
     async def get_conversation(self, api_key: str, conversation_id: str) -> dict | None:
@@ -71,7 +84,7 @@ class OpenHandsAPIClient:
             params={'ids': [conversation_id]},
             headers={'Authorization': f'Bearer {api_key}'},
         )
-        resp.raise_for_status()
+        _raise_with_body(resp)
         conversations = resp.json()
         return conversations[0] if conversations else None
 

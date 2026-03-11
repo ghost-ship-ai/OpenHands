@@ -36,6 +36,9 @@ TERMINAL_STATUSES = frozenset({'STOPPED', 'ERROR', 'COMPLETED', 'CANCELLED'})
 # Shutdown flag — set by signal handlers
 _shutdown_event: asyncio.Event | None = None
 
+# Background task tracking for graceful shutdown
+_pending_tasks: set[asyncio.Task] = set()
+
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
@@ -70,7 +73,12 @@ async def find_matching_automations(
     ``automation_id`` in the event payload.
     """
     source_type = event.source_type
-    payload = event.payload or {}
+    payload = event.payload
+    if payload is None:
+        logger.warning(
+            'Event %s has None payload — defaulting to empty dict', event.id
+        )
+        payload = {}
 
     if source_type in ('cron', 'manual'):
         automation_id = payload.get('automation_id')
@@ -162,15 +170,19 @@ async def resolve_user_api_key(session: AsyncSession, user_id: str) -> str | Non
 
 
 async def download_automation_file(file_store_key: str) -> bytes:
-    """Download the automation .py file from object storage.
+    """Download the automation .py file from object storage."""
+    try:
+        from openhands.server.shared import file_store
+    except ImportError as exc:
+        raise RuntimeError(
+            'file_store is not available — ensure the enterprise server '
+            'has been initialised before calling download_automation_file'
+        ) from exc
 
-    This is a placeholder that will be integrated with the actual
-    object store (GCS/S3) used by the enterprise server.
-    """
-    # TODO: Integrate with enterprise file storage service
-    raise NotImplementedError(
-        f'Object store download not yet implemented for key: {file_store_key}'
-    )
+    content = file_store.read(file_store_key)
+    if isinstance(content, str):
+        return content.encode('utf-8')
+    return content
 
 
 def is_terminal(conversation: dict) -> bool:
@@ -179,84 +191,123 @@ def is_terminal(conversation: dict) -> bool:
     return status in TERMINAL_STATUSES
 
 
+async def _prepare_run(
+    run: AutomationRun,
+    automation: Automation,
+    session_factory: object,
+) -> tuple[str, bytes]:
+    """Resolve the user's API key and download the automation file.
+
+    Returns:
+        (api_key, automation_file) tuple ready for submission.
+
+    Raises:
+        ValueError: If no API key is found.
+        RuntimeError: If file_store is unavailable.
+    """
+    async with session_factory() as key_session:
+        api_key = await resolve_user_api_key(key_session, automation.user_id)
+
+    if not api_key:
+        raise ValueError(f'No API key found for user {automation.user_id}')
+
+    automation_file = await download_automation_file(automation.file_store_key)
+    return api_key, automation_file
+
+
+async def _submit_and_monitor(
+    run: AutomationRun,
+    api_key: str,
+    automation_file: bytes,
+    automation: Automation,
+    api_client: OpenHandsAPIClient,
+    session_factory: object,
+) -> None:
+    """Submit the automation to the V1 API and monitor until completion.
+
+    Updates the run's conversation_id, sends heartbeats, and marks the
+    final status when the conversation reaches a terminal state.
+    """
+    conversation = await api_client.start_conversation(
+        api_key=api_key,
+        automation_file=automation_file,
+        title=f'Automation: {automation.name}',
+        event_payload=run.event_payload,
+    )
+
+    conversation_id = conversation.get('app_conversation_id') or conversation.get(
+        'conversation_id'
+    )
+
+    # Persist conversation ID
+    async with session_factory() as update_session:
+        run_obj = await update_session.get(AutomationRun, run.id)
+        if run_obj:
+            run_obj.conversation_id = conversation_id
+            await update_session.commit()
+
+    # Monitor with heartbeats
+    start_time = utc_now()
+    shutdown_interrupted = False
+    while not is_terminal(conversation):
+        if not should_continue():
+            logger.info('Shutdown requested, stopping run %s monitoring', run.id)
+            shutdown_interrupted = True
+            break
+
+        elapsed = (utc_now() - start_time).total_seconds()
+        if elapsed > RUN_TIMEOUT_SECONDS:
+            raise TimeoutError(
+                f'Run {run.id} exceeded timeout of {RUN_TIMEOUT_SECONDS}s'
+            )
+
+        await asyncio.sleep(HEARTBEAT_INTERVAL_SECONDS)
+
+        async with session_factory() as hb_session:
+            run_obj = await hb_session.get(AutomationRun, run.id)
+            if run_obj:
+                run_obj.heartbeat_at = utc_now()
+                await hb_session.commit()
+
+        conversation = (
+            await api_client.get_conversation(api_key, conversation_id) or {}
+        )
+
+    # Update final status
+    async with session_factory() as final_session:
+        run_obj = await final_session.get(AutomationRun, run.id)
+        if run_obj:
+            if shutdown_interrupted:
+                # Leave as RUNNING — stale recovery will handle it if needed.
+                # The conversation may still be running on the API side.
+                logger.info(
+                    'Run %s left as RUNNING due to executor shutdown', run.id
+                )
+            else:
+                run_obj.status = 'COMPLETED'
+                run_obj.completed_at = utc_now()
+                logger.info('Run %s completed successfully', run.id)
+            await final_session.commit()
+
+
 async def execute_run(
     run: AutomationRun,
     automation: Automation,
     api_client: OpenHandsAPIClient,
     session_factory: object,
 ) -> None:
-    """Execute a single automation run.
+    """Execute a single automation run end-to-end.
 
-    Downloads the automation file, submits to the V1 API,
-    monitors with heartbeats until completion or timeout.
+    Orchestrates preparation (API key + file download) and submission/monitoring.
+    On failure, marks the run for retry or dead-letter.
     """
     try:
-        # Resolve user API key
-        async with session_factory() as key_session:
-            api_key = await resolve_user_api_key(key_session, automation.user_id)
-
-        if not api_key:
-            raise ValueError(f'No API key found for user {automation.user_id}')
-
-        # Download the automation file
-        automation_file = await download_automation_file(automation.file_store_key)
-
-        # Submit to V1 API
-        conversation = await api_client.start_conversation(
-            api_key=api_key,
-            automation_file=automation_file,
-            title=f'Automation: {automation.name}',
-            event_payload=run.event_payload,
+        api_key, automation_file = await _prepare_run(
+            run, automation, session_factory
         )
-
-        conversation_id = conversation.get('app_conversation_id') or conversation.get(
-            'conversation_id'
+        await _submit_and_monitor(
+            run, api_key, automation_file, automation, api_client, session_factory
         )
-
-        # Update run with conversation ID
-        async with session_factory() as update_session:
-            run_obj = await update_session.get(AutomationRun, run.id)
-            if run_obj:
-                run_obj.conversation_id = conversation_id
-                await update_session.commit()
-
-        # Monitor conversation with heartbeats
-        start_time = utc_now()
-        while not is_terminal(conversation):
-            if not should_continue():
-                logger.info('Shutdown requested, stopping run %s monitoring', run.id)
-                break
-
-            elapsed = (utc_now() - start_time).total_seconds()
-            if elapsed > RUN_TIMEOUT_SECONDS:
-                raise TimeoutError(
-                    f'Run {run.id} exceeded timeout of {RUN_TIMEOUT_SECONDS}s'
-                )
-
-            await asyncio.sleep(HEARTBEAT_INTERVAL_SECONDS)
-
-            # Update heartbeat
-            async with session_factory() as hb_session:
-                run_obj = await hb_session.get(AutomationRun, run.id)
-                if run_obj:
-                    run_obj.heartbeat_at = utc_now()
-                    await hb_session.commit()
-
-            # Check conversation status
-            conversation = (
-                await api_client.get_conversation(api_key, conversation_id) or {}
-            )
-
-        # Mark completed
-        async with session_factory() as final_session:
-            run_obj = await final_session.get(AutomationRun, run.id)
-            if run_obj:
-                run_obj.status = 'COMPLETED'
-                run_obj.completed_at = utc_now()
-                await final_session.commit()
-
-        logger.info('Run %s completed successfully', run.id)
-
     except Exception as e:
         logger.exception('Run %s failed: %s', run.id, e)
         await _mark_run_failed(run, str(e), session_factory)
@@ -345,11 +396,13 @@ async def claim_and_execute_runs(
         )
         return True
 
-    # Execute in background (long-running)
-    asyncio.create_task(
+    # Execute in background (long-running) with task tracking
+    task = asyncio.create_task(
         execute_run(run, automation, api_client, session_factory),
         name=f'execute-run-{run.id}',
     )
+    _pending_tasks.add(task)
+    task.add_done_callback(_pending_tasks.discard)
 
     logger.info(
         'Claimed run %s (automation=%s) by executor %s',
@@ -478,5 +531,10 @@ async def executor_main(session_factory: object | None = None) -> None:
                 pass  # Normal — poll interval elapsed
 
     finally:
+        if _pending_tasks:
+            logger.info(
+                'Waiting for %d running tasks to complete...', len(_pending_tasks)
+            )
+            await asyncio.gather(*_pending_tasks, return_exceptions=True)
         await api_client.close()
         logger.info('Automation executor %s shut down', executor_id)
