@@ -67,7 +67,7 @@ test.describe("Smoke Tests @smoke", () => {
     await expect(homePage.accountSettingsMenu).toBeVisible();
   });
 
-  test("should be able to purchase $10 credits via Stripe", async ({ page }) => {
+  test("should be able to purchase $10 credits via Stripe @critical", async ({ page }) => {
     // Navigate to home and open user menu
     await homePage.goto();
     await homePage.openUserMenu();
@@ -201,7 +201,7 @@ test.describe("Smoke Tests @smoke", () => {
     console.log("Smoke test passed: Agent correctly reversed the word");
   });
 
-  test("should be able to navigate to a running conversation", async ({ page }) => {
+  test("should be able to navigate to a running conversation @critical", async ({ page }) => {
     // Navigate to home page
     await homePage.goto();
 
@@ -248,7 +248,7 @@ test.describe("Smoke Tests @smoke", () => {
     console.log("Tavily search test passed: Agent correctly identified the Prime Minister of Ireland");
   });
 
-  test("should be able to create API key and use it to access the API", async ({ page, request, baseURL }) => {
+  test("should be able to create API key and use it to access the API @critical", async ({ page, request, baseURL }) => {
     const API_KEY_NAME = "Integration Test Key";
 
     // Navigate to home and open user menu
