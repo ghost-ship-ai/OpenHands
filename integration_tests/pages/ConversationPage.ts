@@ -23,15 +23,19 @@ export enum AgentState {
 export class ConversationPage extends BasePage {
   // Main containers
   readonly appRoute: Locator;
+
   readonly chatBox: Locator;
 
   // Chat input elements
   readonly chatInput: Locator;
+
   readonly sendButton: Locator;
+
   readonly stopButton: Locator;
 
   // Message elements
   readonly errorBanner: Locator;
+
   readonly waitingMessage: Locator;
 
   // Status indicators
@@ -43,8 +47,14 @@ export class ConversationPage extends BasePage {
     this.appRoute = page.getByTestId("app-route");
     this.chatBox = page.getByTestId("interactive-chat-box");
     this.chatInput = page.getByTestId("chat-input");
-    this.sendButton = page.locator('button[type="submit"], button:has-text("Send"), [data-testid*="send"]').first();
-    this.stopButton = page.locator('button:has-text("Stop"), [data-testid*="stop"]').first();
+    this.sendButton = page
+      .locator(
+        'button[type="submit"], button:has-text("Send"), [data-testid*="send"]',
+      )
+      .first();
+    this.stopButton = page
+      .locator('button:has-text("Stop"), [data-testid*="stop"]')
+      .first();
     this.errorBanner = page.getByTestId("error-message-banner");
     this.waitingMessage = page.locator('[data-testid*="waiting"]').first();
     this.statusIndicator = page.getByTestId("status-icon");
@@ -164,8 +174,14 @@ export class ConversationPage extends BasePage {
    */
   async isAgentProcessing(): Promise<boolean> {
     // Check for loading indicators or disabled input
-    const loadingIndicator = this.page.locator('[data-testid*="loading"], [class*="loading"], [class*="spinner"]').first();
-    if (await loadingIndicator.isVisible({ timeout: 1_000 }).catch(() => false)) {
+    const loadingIndicator = this.page
+      .locator(
+        '[data-testid*="loading"], [class*="loading"], [class*="spinner"]',
+      )
+      .first();
+    if (
+      await loadingIndicator.isVisible({ timeout: 1_000 }).catch(() => false)
+    ) {
       return true;
     }
 
@@ -207,7 +223,9 @@ export class ConversationPage extends BasePage {
    * Get all visible messages in the chat
    */
   async getMessages(): Promise<string[]> {
-    const messageElements = this.page.locator('[data-testid*="message"], [class*="message"]');
+    const messageElements = this.page.locator(
+      '[data-testid*="message"], [class*="message"]',
+    );
     return messageElements.allTextContents();
   }
 
@@ -226,7 +244,10 @@ export class ConversationPage extends BasePage {
    * @param timeout - Maximum time to wait in milliseconds
    * @returns The message containing the expected text
    */
-  async waitForMessageContaining(expectedText: string, timeout: number = 120_000): Promise<string> {
+  async waitForMessageContaining(
+    expectedText: string,
+    timeout: number = 120_000,
+  ): Promise<string> {
     const startTime = Date.now();
 
     while (Date.now() - startTime < timeout) {
@@ -252,7 +273,7 @@ export class ConversationPage extends BasePage {
     const allMessages = await this.getMessages();
     throw new Error(
       `Timeout waiting for message containing "${expectedText}" after ${timeout}ms. ` +
-      `Messages found: ${JSON.stringify(allMessages.slice(-5))}`
+        `Messages found: ${JSON.stringify(allMessages.slice(-5))}`,
     );
   }
 
@@ -260,7 +281,9 @@ export class ConversationPage extends BasePage {
    * Stop the currently running agent
    */
   async stopAgent(): Promise<void> {
-    if (await this.stopButton.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    if (
+      await this.stopButton.isVisible({ timeout: 2_000 }).catch(() => false)
+    ) {
       await this.stopButton.click();
       await this.page.waitForTimeout(1000);
     }
@@ -284,7 +307,10 @@ export class ConversationPage extends BasePage {
    * 3. Wait for completion
    * 4. Verify no errors
    */
-  async executePrompt(message: string, timeout: number = 120_000): Promise<void> {
+  async executePrompt(
+    message: string,
+    timeout: number = 120_000,
+  ): Promise<void> {
     // Ensure agent is ready
     await this.waitForAgentReady(30_000);
 

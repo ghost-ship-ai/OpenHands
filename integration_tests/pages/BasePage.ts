@@ -23,21 +23,29 @@ export class BasePage {
    * Wait for the page to fully load
    */
   async waitForPageLoad(): Promise<void> {
-    await this.page.waitForLoadState("networkidle", { timeout: 30_000 }).catch(() => {});
+    await this.page
+      .waitForLoadState("networkidle", { timeout: 30_000 })
+      .catch(() => {});
     await this.page.waitForLoadState("domcontentloaded");
   }
 
   /**
    * Wait for an element to be visible
    */
-  async waitForElement(locator: Locator, timeout: number = 30_000): Promise<void> {
+  async waitForElement(
+    locator: Locator,
+    timeout: number = 30_000,
+  ): Promise<void> {
     await expect(locator).toBeVisible({ timeout });
   }
 
   /**
    * Wait for an element to be hidden
    */
-  async waitForElementHidden(locator: Locator, timeout: number = 30_000): Promise<void> {
+  async waitForElementHidden(
+    locator: Locator,
+    timeout: number = 30_000,
+  ): Promise<void> {
     await expect(locator).toBeHidden({ timeout });
   }
 
@@ -74,6 +82,8 @@ export class BasePage {
    * Wait for network to be idle
    */
   async waitForNetworkIdle(timeout: number = 10_000): Promise<void> {
-    await this.page.waitForLoadState("networkidle", { timeout }).catch(() => {});
+    await this.page
+      .waitForLoadState("networkidle", { timeout })
+      .catch(() => {});
   }
 }

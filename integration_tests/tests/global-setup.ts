@@ -30,11 +30,13 @@ setup("authenticate", async ({ page, baseURL }) => {
   // Check if we should skip authentication (use existing auth state)
   if (authMethod === "skip") {
     if (fs.existsSync(authFile)) {
-      console.log("Using existing authentication state from fixtures/auth.json");
+      console.log(
+        "Using existing authentication state from fixtures/auth.json",
+      );
       return;
     }
     throw new Error(
-      "AUTH_METHOD=skip but no existing auth.json found. Please run authentication first."
+      "AUTH_METHOD=skip but no existing auth.json found. Please run authentication first.",
     );
   }
 
@@ -59,23 +61,30 @@ setup("authenticate", async ({ page, baseURL }) => {
   }
 
   // Wait for successful redirect back to app (could be home page or accept-tos)
-  await page.waitForURL((url) => {
-    const urlString = url.toString();
-    return (
-      !urlString.includes("github.com") &&
-      !urlString.includes("login") &&
-      !urlString.includes("keycloak")
-    );
-  }, { timeout: 60_000 });
+  await page.waitForURL(
+    (url) => {
+      const urlString = url.toString();
+      return (
+        !urlString.includes("github.com") &&
+        !urlString.includes("login") &&
+        !urlString.includes("keycloak")
+      );
+    },
+    { timeout: 60_000 },
+  );
 
   // Handle TOS acceptance if redirected to accept-tos page
   if (page.url().includes("/accept-tos")) {
-    console.log("Redirected to accept-tos page after authentication, handling TOS acceptance...");
+    console.log(
+      "Redirected to accept-tos page after authentication, handling TOS acceptance...",
+    );
     await handleTOSAcceptance(page);
   }
 
   // Verify authentication succeeded
-  await expect(page.getByTestId("home-screen")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("home-screen")).toBeVisible({
+    timeout: 30_000,
+  });
 
   // Save authentication state
   await page.context().storageState({ path: authFile });
@@ -85,14 +94,18 @@ setup("authenticate", async ({ page, baseURL }) => {
 /**
  * Check if the user is already authenticated
  */
-async function checkIfAuthenticated(page: import("@playwright/test").Page): Promise<boolean> {
+async function checkIfAuthenticated(
+  page: import("@playwright/test").Page,
+): Promise<boolean> {
   try {
     // Look for elements that indicate authentication
     const homeScreen = page.getByTestId("home-screen");
     const loginPage = page.getByTestId("login-page");
 
     // Wait a bit for the page to stabilize
-    await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => {});
+    await page
+      .waitForLoadState("networkidle", { timeout: 10_000 })
+      .catch(() => {});
 
     // Check if we're on the home screen (authenticated)
     const isOnHome = await homeScreen.isVisible().catch(() => false);
@@ -107,34 +120,39 @@ async function checkIfAuthenticated(page: import("@playwright/test").Page): Prom
 /**
  * Authenticate using GitHub OAuth
  */
-async function authenticateWithGitHub(page: import("@playwright/test").Page): Promise<void> {
+async function authenticateWithGitHub(
+  page: import("@playwright/test").Page,
+): Promise<void> {
   const username = process.env.GITHUB_TEST_USERNAME;
   const password = process.env.GITHUB_TEST_PASSWORD;
 
   if (!username || !password) {
     throw new Error(
-      "GitHub authentication requires GITHUB_TEST_USERNAME and GITHUB_TEST_PASSWORD environment variables"
+      "GitHub authentication requires GITHUB_TEST_USERNAME and GITHUB_TEST_PASSWORD environment variables",
     );
   }
 
   console.log("Starting GitHub authentication...");
 
   // Click the GitHub login button
-  const githubButton = page.getByRole('button', { name: 'Log in with GitHub' });
+  const githubButton = page.getByRole("button", { name: "Log in with GitHub" });
   await expect(githubButton).toBeVisible({ timeout: 10_000 });
   await githubButton.click();
 
   // Wait for redirect - could be GitHub.com, home page, or accept-tos
   // If user is already logged into Keycloak, they may be redirected back to the app
-  await page.waitForURL((url) => {
-    const urlString = url.toString();
-    return (
-      urlString.includes("github.com") ||
-      urlString.includes("/accept-tos") ||
-      // Check if redirected back to home (no login/keycloak in URL)
-      (!urlString.includes("keycloak") && !urlString.includes("/login"))
-    );
-  }, { timeout: 30_000 });
+  await page.waitForURL(
+    (url) => {
+      const urlString = url.toString();
+      return (
+        urlString.includes("github.com") ||
+        urlString.includes("/accept-tos") ||
+        // Check if redirected back to home (no login/keycloak in URL)
+        (!urlString.includes("keycloak") && !urlString.includes("/login"))
+      );
+    },
+    { timeout: 30_000 },
+  );
 
   const currentUrl = page.url();
 
@@ -180,9 +198,13 @@ async function authenticateWithGitHub(page: import("@playwright/test").Page): Pr
 /**
  * Handle Terms of Service acceptance flow
  */
-async function handleTOSAcceptance(page: import("@playwright/test").Page): Promise<void> {
+async function handleTOSAcceptance(
+  page: import("@playwright/test").Page,
+): Promise<void> {
   // Wait for the TOS page to be fully loaded
-  await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => {});
+  await page
+    .waitForLoadState("networkidle", { timeout: 10_000 })
+    .catch(() => {});
 
   // Find and click the TOS checkbox
   const tosCheckbox = page.locator('input[type="checkbox"]');
@@ -190,25 +212,33 @@ async function handleTOSAcceptance(page: import("@playwright/test").Page): Promi
   await tosCheckbox.click();
 
   // Find and click the Continue button
-  const continueButton = page.getByRole('button', { name: 'Continue' });
+  const continueButton = page.getByRole("button", { name: "Continue" });
   await expect(continueButton).toBeEnabled({ timeout: 5_000 });
   await continueButton.click();
 
   // Wait for redirect to home page after TOS acceptance
-  await page.waitForURL((url) => {
-    const urlString = url.toString();
-    return !urlString.includes("/accept-tos");
-  }, { timeout: 30_000 });
+  await page.waitForURL(
+    (url) => {
+      const urlString = url.toString();
+      return !urlString.includes("/accept-tos");
+    },
+    { timeout: 30_000 },
+  );
 }
 
 /**
  * Handle GitHub 2FA if enabled
  */
-async function handle2FA(page: import("@playwright/test").Page, totpSecret: string): Promise<void> {
+async function handle2FA(
+  page: import("@playwright/test").Page,
+  totpSecret: string,
+): Promise<void> {
   try {
     // Check if 2FA page appears
     const otpField = page.locator('input[name="otp"]');
-    const isOtpVisible = await otpField.isVisible({ timeout: 5_000 }).catch(() => false);
+    const isOtpVisible = await otpField
+      .isVisible({ timeout: 5_000 })
+      .catch(() => false);
 
     if (isOtpVisible) {
       console.log("2FA required, generating TOTP code...");
@@ -229,23 +259,27 @@ async function handle2FA(page: import("@playwright/test").Page, totpSecret: stri
  * Generate TOTP code from secret
  * Note: In production, use a proper TOTP library like 'otplib'
  */
-async function generateTOTP(secret: string): Promise<string> {
+async function generateTOTP(_secret: string): Promise<string> {
   // This is a placeholder - in production, use:
   // import { authenticator } from 'otplib';
   // return authenticator.generate(secret);
   throw new Error(
-    "TOTP generation not implemented. Install 'otplib' package and implement generateTOTP function."
+    "TOTP generation not implemented. Install 'otplib' package and implement generateTOTP function.",
   );
 }
 
 /**
  * Handle OAuth authorization prompt if it appears
  */
-async function handleOAuthAuthorization(page: import("@playwright/test").Page): Promise<void> {
+async function handleOAuthAuthorization(
+  page: import("@playwright/test").Page,
+): Promise<void> {
   try {
     // Check if we need to authorize the app
     const authorizeButton = page.locator('button[name="authorize"]');
-    const isAuthVisible = await authorizeButton.isVisible({ timeout: 5_000 }).catch(() => false);
+    const isAuthVisible = await authorizeButton
+      .isVisible({ timeout: 5_000 })
+      .catch(() => false);
 
     if (isAuthVisible) {
       console.log("OAuth authorization required, clicking authorize...");
@@ -259,13 +293,15 @@ async function handleOAuthAuthorization(page: import("@playwright/test").Page): 
 /**
  * Authenticate using Keycloak
  */
-async function authenticateWithKeycloak(page: import("@playwright/test").Page): Promise<void> {
+async function authenticateWithKeycloak(
+  page: import("@playwright/test").Page,
+): Promise<void> {
   const username = process.env.KEYCLOAK_USERNAME;
   const password = process.env.KEYCLOAK_PASSWORD;
 
   if (!username || !password) {
     throw new Error(
-      "Keycloak authentication requires KEYCLOAK_USERNAME and KEYCLOAK_PASSWORD environment variables"
+      "Keycloak authentication requires KEYCLOAK_USERNAME and KEYCLOAK_PASSWORD environment variables",
     );
   }
 

@@ -64,15 +64,8 @@ export default defineConfig({
 
   // Reporter configuration
   reporter: process.env.CI
-    ? [
-        ["html", { outputFolder: "playwright-report" }],
-        ["list"],
-        ["github"],
-      ]
-    : [
-        ["html", { outputFolder: "playwright-report" }],
-        ["list"],
-      ],
+    ? [["html", { outputFolder: "playwright-report" }], ["list"], ["github"]]
+    : [["html", { outputFolder: "playwright-report" }], ["list"]],
 
   // Timeout configuration
   timeout: 120_000, // 2 minutes per test (agent operations can be slow)

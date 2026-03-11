@@ -1,4 +1,4 @@
-import { Page, expect } from "@playwright/test";
+import { Page } from "@playwright/test";
 
 /**
  * Utility functions for integration tests
@@ -13,9 +13,13 @@ export async function waitForCondition(
     timeout?: number;
     interval?: number;
     message?: string;
-  } = {}
+  } = {},
 ): Promise<void> {
-  const { timeout = 30_000, interval = 500, message = "Condition not met" } = options;
+  const {
+    timeout = 30_000,
+    interval = 500,
+    message = "Condition not met",
+  } = options;
   const startTime = Date.now();
 
   while (Date.now() - startTime < timeout) {
@@ -37,7 +41,7 @@ export async function retry<T>(
     maxRetries?: number;
     baseDelay?: number;
     maxDelay?: number;
-  } = {}
+  } = {},
 ): Promise<T> {
   const { maxRetries = 3, baseDelay = 1000, maxDelay = 10000 } = options;
 
@@ -49,8 +53,10 @@ export async function retry<T>(
     } catch (error) {
       lastError = error as Error;
       if (attempt < maxRetries - 1) {
-        const delay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
-        console.log(`Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms`);
+        const delay = Math.min(baseDelay * 2 ** attempt, maxDelay);
+        console.log(
+          `Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms`,
+        );
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
@@ -80,7 +86,7 @@ export function logStep(step: string): void {
 export async function takeScreenshot(
   page: Page,
   name: string,
-  options: { fullPage?: boolean } = {}
+  options: { fullPage?: boolean } = {},
 ): Promise<void> {
   const timestamp = Date.now();
   const sanitizedName = name.replace(/[^a-zA-Z0-9-_]/g, "-");
@@ -95,7 +101,7 @@ export async function takeScreenshot(
  */
 export async function expectNoConsoleErrors(
   page: Page,
-  action: () => Promise<void>
+  action: () => Promise<void>,
 ): Promise<void> {
   const errors: string[] = [];
 
@@ -128,15 +134,14 @@ export async function expectNoConsoleErrors(
 export const env = {
   baseUrl: process.env.BASE_URL || "https://staging.all-hands.dev",
   testEnv: process.env.TEST_ENV || "staging",
-  testRepoUrl: process.env.TEST_REPO_URL || "https://github.com/OpenHands/deploy",
+  testRepoUrl:
+    process.env.TEST_REPO_URL || "https://github.com/OpenHands/deploy",
   testPrompt: process.env.TEST_PROMPT || "Flip a coin!",
   isCI: process.env.CI === "true",
 
   getFeatureBranchUrl(branchName: string): string {
     // Sanitize branch name for URL
-    const sanitized = branchName
-      .replace(/[^a-zA-Z0-9-]/g, "-")
-      .toLowerCase();
+    const sanitized = branchName.replace(/[^a-zA-Z0-9-]/g, "-").toLowerCase();
     return `https://${sanitized}.staging.all-hands.dev`;
   },
 };
@@ -144,7 +149,9 @@ export const env = {
 /**
  * Check if running in a specific environment
  */
-export function isEnvironment(env: "staging" | "production" | "local"): boolean {
+export function isEnvironment(
+  env: "staging" | "production" | "local",
+): boolean {
   const baseUrl = process.env.BASE_URL || "";
 
   switch (env) {
@@ -165,7 +172,7 @@ export function isEnvironment(env: "staging" | "production" | "local"): boolean 
 export function skipInEnvironment(
   test: { skip: (condition: boolean, message: string) => void },
   envs: ("staging" | "production" | "local")[],
-  reason: string
+  reason: string,
 ): void {
   const shouldSkip = envs.some(isEnvironment);
   test.skip(shouldSkip, `Skipped in ${envs.join(", ")}: ${reason}`);

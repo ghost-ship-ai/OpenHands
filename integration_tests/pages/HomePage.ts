@@ -8,27 +8,39 @@ import { BasePage } from "./BasePage";
 export class HomePage extends BasePage {
   // Main containers
   readonly homeScreen: Locator;
+
   readonly newConversationSection: Locator;
+
   readonly recentConversationsSection: Locator;
 
   // User avatar and menu
   readonly userAvatar: Locator;
+
   readonly accountSettingsMenu: Locator;
 
   // Repository selection
   readonly repoSelector: Locator;
+
   readonly repoSearchInput: Locator;
 
   constructor(page: Page) {
     super(page);
 
     this.homeScreen = page.getByTestId("home-screen");
-    this.newConversationSection = page.getByTestId("home-screen-new-conversation-section");
-    this.recentConversationsSection = page.getByTestId("home-screen-recent-conversations-section");
+    this.newConversationSection = page.getByTestId(
+      "home-screen-new-conversation-section",
+    );
+    this.recentConversationsSection = page.getByTestId(
+      "home-screen-recent-conversations-section",
+    );
     this.userAvatar = page.getByTestId("user-avatar");
-    this.accountSettingsMenu = page.getByTestId("account-settings-context-menu");
+    this.accountSettingsMenu = page.getByTestId(
+      "account-settings-context-menu",
+    );
     this.repoSelector = page.locator('[data-testid*="repo"]').first();
-    this.repoSearchInput = page.locator('input[placeholder*="repository"], input[placeholder*="repo"]').first();
+    this.repoSearchInput = page
+      .locator('input[placeholder*="repository"], input[placeholder*="repo"]')
+      .first();
   }
 
   /**
@@ -68,14 +80,20 @@ export class HomePage extends BasePage {
     const repoName = repoUrl.split("/").slice(-2).join("/");
 
     // Look for repository selector/input
-    const repoInput = this.page.locator('input[placeholder*="repository"], input[placeholder*="search"]').first();
-    const repoSelector = this.page.locator('[class*="repo"], [data-testid*="repo"]').first();
+    const repoInput = this.page
+      .locator('input[placeholder*="repository"], input[placeholder*="search"]')
+      .first();
+    const repoSelector = this.page
+      .locator('[class*="repo"], [data-testid*="repo"]')
+      .first();
 
     // Try to find and interact with repo selection
     if (await repoInput.isVisible({ timeout: 5_000 }).catch(() => false)) {
       await repoInput.fill(repoName);
       await this.page.waitForTimeout(1000); // Wait for search results
-    } else if (await repoSelector.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    } else if (
+      await repoSelector.isVisible({ timeout: 5_000 }).catch(() => false)
+    ) {
       await repoSelector.click();
       await this.page.waitForTimeout(500);
     }
@@ -91,14 +109,18 @@ export class HomePage extends BasePage {
    * Start a new conversation
    * @param buttonId - Optional test ID of the button to click (default: 'launch-new-conversation-button')
    */
-  async startNewConversation(buttonId: string = 'launch-new-conversation-button'): Promise<void> {
-    const startButton = this.page.getByTestId(buttonId)
+  async startNewConversation(
+    buttonId: string = "launch-new-conversation-button",
+  ): Promise<void> {
+    const startButton = this.page.getByTestId(buttonId);
     if (await startButton.isVisible({ timeout: 5_000 }).catch(() => false)) {
       await startButton.click();
     }
 
     // Wait for conversation/chat interface to load
-    await this.page.waitForURL(/conversation|chat|app/, { timeout: 30_000 }).catch(() => {});
+    await this.page
+      .waitForURL(/conversation|chat|app/, { timeout: 30_000 })
+      .catch(() => {});
   }
 
   /**
@@ -115,7 +137,10 @@ export class HomePage extends BasePage {
 
     // Wait for the menu to be attached to the DOM (may not be visible yet)
     // This ensures the async config/auth state has loaded
-    await this.accountSettingsMenu.waitFor({ state: "attached", timeout: 15_000 });
+    await this.accountSettingsMenu.waitFor({
+      state: "attached",
+      timeout: 15_000,
+    });
 
     // Now hover over the user-actions container to trigger the menu visibility
     // The menu uses CSS group-hover to show, so we need to hover the parent
@@ -131,7 +156,9 @@ export class HomePage extends BasePage {
    */
   async getRecentConversations(): Promise<string[]> {
     await this.waitForElement(this.recentConversationsSection);
-    const conversations = await this.recentConversationsSection.locator("a, button, [role='button']").allTextContents();
+    const conversations = await this.recentConversationsSection
+      .locator("a, button, [role='button']")
+      .allTextContents();
     return conversations.filter((text) => text.trim().length > 0);
   }
 
@@ -145,7 +172,9 @@ export class HomePage extends BasePage {
     await expect(recentConversations).toBeVisible({ timeout: 10_000 });
 
     // Find the first conversation link (they link to /conversations/{id})
-    const firstConversationLink = recentConversations.locator('a[href^="/conversations/"]').first();
+    const firstConversationLink = recentConversations
+      .locator('a[href^="/conversations/"]')
+      .first();
     await expect(firstConversationLink).toBeVisible({ timeout: 10_000 });
 
     // Click the conversation
