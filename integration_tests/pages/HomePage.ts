@@ -103,9 +103,26 @@ export class HomePage extends BasePage {
 
   /**
    * Open user settings menu
+   * 
+   * Note: The menu is conditionally rendered based on async state (config loaded,
+   * user authenticated, etc.). We need to wait for the menu element to be attached
+   * to the DOM before we can interact with it. The menu appears on hover over the
+   * user-actions container, or when clicking the avatar toggles state.
    */
   async openUserMenu(): Promise<void> {
-    await this.userAvatar.click();
+    // First, wait for the user avatar to be visible
+    await expect(this.userAvatar).toBeVisible({ timeout: 10_000 });
+
+    // Wait for the menu to be attached to the DOM (may not be visible yet)
+    // This ensures the async config/auth state has loaded
+    await this.accountSettingsMenu.waitFor({ state: "attached", timeout: 15_000 });
+
+    // Now hover over the user-actions container to trigger the menu visibility
+    // The menu uses CSS group-hover to show, so we need to hover the parent
+    const userActionsContainer = this.page.getByTestId("user-actions");
+    await userActionsContainer.hover();
+
+    // Wait for the menu to become visible
     await expect(this.accountSettingsMenu).toBeVisible({ timeout: 5_000 });
   }
 
