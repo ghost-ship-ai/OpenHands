@@ -103,7 +103,7 @@ export class HomePage extends BasePage {
 
   /**
    * Open user settings menu
-   * 
+   *
    * Note: The menu is conditionally rendered based on async state (config loaded,
    * user authenticated, etc.). We need to wait for the menu element to be attached
    * to the DOM before we can interact with it. The menu appears on hover over the
