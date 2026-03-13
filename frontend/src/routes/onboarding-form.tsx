@@ -25,7 +25,9 @@ export const clientLoader = async () => {
 function OnboardingForm() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const config = useConfig();
+  // useConfig is disabled on intermediate pages by default
+  // override enabled so /onboarding can use `config.app_mode` to filter questions for the correct mode (oss vs saas)
+  const config = useConfig({ enabled: true });
   const { mutate: submitOnboarding } = useSubmitOnboarding();
   const { trackOnboardingCompleted } = useTracking();
 
@@ -68,6 +70,11 @@ function OnboardingForm() {
     }
     return currentSelections.length > 0;
   }, [currentStep, inputValues, currentSelections]);
+
+  // Wait for config to load before rendering to show correct questions
+  if (!config.data) {
+    return null;
+  }
 
   const handleSelectOption = (optionId: string) => {
     if (!currentStep) return;
