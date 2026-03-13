@@ -993,11 +993,15 @@ Integration tests can be written using the existing test infrastructure without 
   - Submit message during startup, verify queued
   - Simulate runtime ready, verify message sent
 
-**Example Test Pattern (using existing infrastructure):**
+**Example Test Patterns (based on existing `interactive-chat-box.test.tsx`):**
+
+The codebase already has working patterns for testing contentEditable inputs:
+
 ```typescript
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { conversationWebSocketTestSetup } from "./helpers/msw-websocket-setup";
+import { MemoryRouter, Routes, Route } from "react-router";
+import { renderWithProviders } from "../../test-utils";
 
 describe("Draft Persistence", () => {
   beforeEach(() => {
@@ -1006,14 +1010,26 @@ describe("Draft Persistence", () => {
 
   it("saves draft to localStorage on input", async () => {
     const user = userEvent.setup();
-    render(<ChatInputWithProviders conversationId="conv-123" />);
     
-    const input = screen.getByRole("textbox");
+    renderWithProviders(
+      <MemoryRouter initialEntries={["/conversations/conv-123"]}>
+        <Routes>
+          <Route path="/conversations/:conversationId" element={<ChatInput />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    
+    const input = screen.getByTestId("chat-input");
+    
+    // userEvent.type() works with contentEditable
     await user.type(input, "my draft message");
+    expect(input).toHaveTextContent("my draft message");
     
-    // Wait for debounced save
+    // Wait for debounced save (300ms)
     await waitFor(() => {
-      const stored = JSON.parse(localStorage.getItem("conversation-state-conv-123") || "{}");
+      const stored = JSON.parse(
+        localStorage.getItem("conversation-state-conv-123") || "{}"
+      );
       expect(stored.draftMessage).toBe("my draft message");
     });
   });
@@ -1025,10 +1041,88 @@ describe("Draft Persistence", () => {
       draftTimestamp: Date.now(),
     }));
     
-    render(<ChatInputWithProviders conversationId="conv-123" />);
+    renderWithProviders(
+      <MemoryRouter initialEntries={["/conversations/conv-123"]}>
+        <Routes>
+          <Route path="/conversations/:conversationId" element={<ChatInput />} />
+        </Routes>
+      </MemoryRouter>
+    );
     
-    const input = screen.getByRole("textbox");
+    const input = screen.getByTestId("chat-input");
     expect(input).toHaveTextContent("restored draft");
+  });
+
+  it("switches drafts when changing conversations", async () => {
+    const user = userEvent.setup();
+    
+    // Set up drafts for two conversations
+    localStorage.setItem("conversation-state-conv-A", JSON.stringify({
+      draftMessage: "draft for A",
+      draftTimestamp: Date.now(),
+    }));
+    localStorage.setItem("conversation-state-conv-B", JSON.stringify({
+      draftMessage: "draft for B", 
+      draftTimestamp: Date.now(),
+    }));
+    
+    const { rerender } = renderWithProviders(
+      <MemoryRouter initialEntries={["/conversations/conv-A"]}>
+        <Routes>
+          <Route path="/conversations/:conversationId" element={<ChatInput />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    
+    // Verify conv-A draft loaded
+    expect(screen.getByTestId("chat-input")).toHaveTextContent("draft for A");
+    
+    // Switch to conv-B by re-rendering with new route
+    rerender(
+      <MemoryRouter initialEntries={["/conversations/conv-B"]}>
+        <Routes>
+          <Route path="/conversations/:conversationId" element={<ChatInput />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    
+    // Verify conv-B draft loaded
+    expect(screen.getByTestId("chat-input")).toHaveTextContent("draft for B");
+  });
+});
+
+describe("Message Queue", () => {
+  it("queues message when WebSocket disconnected", async () => {
+    const user = userEvent.setup();
+    const { wsLink, server } = conversationWebSocketTestSetup();
+    
+    // Start with disconnected state (don't call server.connect())
+    server.listen();
+    
+    renderWithProviders(
+      <MemoryRouter initialEntries={["/conversations/conv-123"]}>
+        <ConversationWebSocketProvider conversationId="conv-123">
+          <ChatInterface />
+        </ConversationWebSocketProvider>
+      </MemoryRouter>
+    );
+    
+    const input = screen.getByTestId("chat-input");
+    await user.type(input, "queued message");
+    
+    const submitButton = screen.getByTestId("submit-button");
+    await user.click(submitButton);
+    
+    // Verify message was queued in store
+    const queueStore = useMessageQueueStore.getState();
+    const queued = queueStore.getMessagesForConversation("conv-123");
+    expect(queued).toHaveLength(1);
+    expect(queued[0].content).toBe("queued message");
+    expect(queued[0].status).toBe("pending");
+    
+    server.close();
   });
 });
 ```
+
+**Note on contentEditable testing:** The existing tests in `interactive-chat-box.test.tsx` show that `userEvent.type()` works with contentEditable divs. For maximum reliability, the tests sometimes also set `element.innerText` directly before assertions.
