@@ -347,7 +347,7 @@ class Runtime(FileEditRuntimeMixin):
             return self._run_cmd_with_retry(
                 cmd, f'Failed to {context} for env vars {var_names}'
             )
-        except RuntimeError as original_error:
+        except RuntimeError:
             # Log the original error at debug level for operators, but redact secret values
             # We only log the variable names, not the command which contains secrets
             logger.debug(
@@ -438,7 +438,10 @@ class Runtime(FileEditRuntimeMixin):
             logger.debug(f'Adding env vars to .bashrc: {var_names}')
 
             self._run_env_cmd_redacted(
-                bashrc_cmd, 'persist environment variables to .bashrc', var_names, is_windows=False
+                bashrc_cmd,
+                'persist environment variables to .bashrc',
+                var_names,
+                is_windows=False,
             )
 
     def on_event(self, event: Event) -> None:

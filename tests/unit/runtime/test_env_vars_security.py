@@ -167,7 +167,9 @@ class TestAddEnvVarsSecretRedaction:
 
         # Should NOT contain any secret values
         for secret in secrets.values():
-            assert secret not in error_message, f'Secret "{secret}" leaked in error message'
+            assert secret not in error_message, (
+                f'Secret "{secret}" leaked in error message'
+            )
 
         # Should contain the variable names (keys) - they get uppercased
         assert 'API_KEY' in error_message
@@ -277,10 +279,12 @@ class TestAddEnvVarsSecretRedaction:
         runtime = StubRuntime(run_handler=run_handler)
 
         # Should not raise
-        runtime.add_env_vars({
-            'VALID_VAR_1': 'value1',
-            'VALID_VAR_2': 'value2',
-        })
+        runtime.add_env_vars(
+            {
+                'VALID_VAR_1': 'value1',
+                'VALID_VAR_2': 'value2',
+            }
+        )
 
     def test_var_names_are_uppercased_in_error(self):
         """Test that variable names in errors are uppercased as they would be set."""
