@@ -121,15 +121,22 @@ beforeEach(() => {
 });
 
 describe("LlmSettingsScreen", () => {
-  it("renders schema-driven basic fields from sdk_settings_schema", async () => {
+  it("renders critical fields and schema-driven sections from sdk_settings_schema", async () => {
     vi.spyOn(SettingsService, "getSettings").mockResolvedValue(buildSettings());
 
     renderLlmSettingsScreen();
 
     await screen.findByTestId("llm-settings-screen");
-    expect(screen.getByTestId("sdk-settings-llm.model")).toBeInTheDocument();
+    // Critical fields rendered by CriticalFields component
     expect(screen.getByTestId("sdk-settings-llm.api_key")).toBeInTheDocument();
-    expect(screen.getByTestId("sdk-settings-critic.enabled")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("sdk-settings-llm.base_url"),
+    ).toBeInTheDocument();
+    // Critic section rendered by generic schema renderer
+    expect(
+      screen.getByTestId("sdk-settings-critic.enabled"),
+    ).toBeInTheDocument();
+    // Minor field hidden in basic view
     expect(
       screen.queryByTestId("sdk-settings-critic.mode"),
     ).not.toBeInTheDocument();
@@ -141,10 +148,12 @@ describe("LlmSettingsScreen", () => {
     renderLlmSettingsScreen();
 
     await screen.findByTestId("llm-settings-screen");
-    await userEvent.click(screen.getByTestId("llm-settings-advanced-toggle"));
+    // Switch to "All" view to see minor fields
+    await userEvent.click(screen.getByTestId("llm-settings-all-toggle"));
 
     const criticSwitch = screen.getByTestId("sdk-settings-critic.enabled");
     expect(criticSwitch).toBeInTheDocument();
+    // critic.mode is dependent on critic.enabled; not shown while disabled
     expect(
       screen.queryByTestId("sdk-settings-critic.mode"),
     ).not.toBeInTheDocument();
@@ -154,7 +163,7 @@ describe("LlmSettingsScreen", () => {
     expect(screen.getByTestId("sdk-settings-critic.mode")).toBeInTheDocument();
   });
 
-  it("starts in advanced mode when advanced sdk values override defaults", async () => {
+  it("starts in 'all' mode when minor sdk values override defaults", async () => {
     vi.spyOn(SettingsService, "getSettings").mockResolvedValue(
       buildSettings({
         sdk_settings_values: {
@@ -179,15 +188,16 @@ describe("LlmSettingsScreen", () => {
 
     renderLlmSettingsScreen();
 
-    const llmModelInput = await screen.findByTestId("sdk-settings-llm.model");
-    await userEvent.clear(llmModelInput);
-    await userEvent.type(llmModelInput, "openai/gpt-4o-mini");
+    // Change the API key (always visible in CriticalFields)
+    const apiKeyInput = await screen.findByTestId("sdk-settings-llm.api_key");
+    await userEvent.clear(apiKeyInput);
+    await userEvent.type(apiKeyInput, "sk-test-key");
     await userEvent.click(screen.getByTestId("save-button"));
 
     await waitFor(() => {
       expect(saveSettingsSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          "llm.model": "openai/gpt-4o-mini",
+          "llm.api_key": "sk-test-key",
         }),
       );
     });
@@ -204,7 +214,7 @@ describe("LlmSettingsScreen", () => {
 
     await screen.findByTestId("llm-settings-screen");
     expect(screen.queryByTestId("save-button")).not.toBeInTheDocument();
-    expect(screen.getByTestId("sdk-settings-llm.model")).toBeDisabled();
+    expect(screen.getByTestId("sdk-settings-llm.api_key")).toBeDisabled();
   });
 
   it("shows a fallback message when sdk settings schema is unavailable", async () => {
@@ -216,6 +226,17 @@ describe("LlmSettingsScreen", () => {
 
     expect(
       await screen.findByText("SETTINGS$SDK_SCHEMA_UNAVAILABLE"),
+    ).toBeInTheDocument();
+  });
+
+  it("renders help link for api key field", async () => {
+    vi.spyOn(SettingsService, "getSettings").mockResolvedValue(buildSettings());
+
+    renderLlmSettingsScreen();
+
+    await screen.findByTestId("llm-settings-screen");
+    expect(
+      screen.getByTestId("help-link-llm.api_key"),
     ).toBeInTheDocument();
   });
 });

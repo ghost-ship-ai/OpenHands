@@ -5,6 +5,8 @@ import {
   buildSdkSettingsPayload,
   getVisibleSettingsSections,
   hasAdvancedSettingsOverrides,
+  inferInitialView,
+  SPECIALLY_RENDERED_KEYS,
 } from "./sdk-settings-schema";
 import { Settings } from "#/types/settings";
 
@@ -61,6 +63,19 @@ const BASE_SETTINGS: Settings = {
             depends_on: [],
             prominence: "critical",
             secret: true,
+            required: false,
+          },
+          {
+            key: "llm.base_url",
+            label: "Base URL",
+            section: "llm",
+            section_label: "LLM",
+            value_type: "string",
+            default: null,
+            choices: [],
+            depends_on: [],
+            prominence: "critical",
+            secret: false,
             required: false,
           },
           {
@@ -131,6 +146,7 @@ describe("sdk settings schema helpers", () => {
       "critic.mode": "finish_and_message",
       "critic.enabled": false,
       "llm.api_key": "",
+      "llm.base_url": "",
       "llm.litellm_extra_body": "{}",
       "llm.model": "openai/gpt-4o",
     });
@@ -138,50 +154,57 @@ describe("sdk settings schema helpers", () => {
 
   it("detects advanced overrides from non-default values", () => {
     expect(hasAdvancedSettingsOverrides(BASE_SETTINGS)).toBe(false);
+    expect(inferInitialView(BASE_SETTINGS)).toBe("basic");
 
-    expect(
-      hasAdvancedSettingsOverrides({
-        ...BASE_SETTINGS,
-        sdk_settings_values: {
-          ...BASE_SETTINGS.sdk_settings_values,
-          "critic.mode": "all_actions",
-        },
-      }),
-    ).toBe(true);
+    const withMinorOverride = {
+      ...BASE_SETTINGS,
+      sdk_settings_values: {
+        ...BASE_SETTINGS.sdk_settings_values,
+        "critic.mode": "all_actions",
+      },
+    };
+    expect(hasAdvancedSettingsOverrides(withMinorOverride)).toBe(true);
+    expect(inferInitialView(withMinorOverride)).toBe("all");
   });
 
-  it("filters minor and dependent fields based on current values", () => {
+  it("filters fields by view tier and excludes specially-rendered keys", () => {
     const values = buildInitialSettingsFormValues(BASE_SETTINGS);
 
-    expect(
-      getVisibleSettingsSections(
-        BASE_SETTINGS.sdk_settings_schema!,
-        values,
-        false,
-      ),
-    ).toEqual([
-      {
-        key: "llm",
-        label: "LLM",
-        fields: BASE_SETTINGS.sdk_settings_schema!.sections[0].fields.slice(
-          0,
-          2,
-        ),
-      },
-      {
-        key: "critic",
-        label: "Critic",
-        fields: [BASE_SETTINGS.sdk_settings_schema!.sections[1].fields[0]],
-      },
-    ]);
+    // In "basic" view: only critical fields, minus the specially-rendered ones
+    const basicSections = getVisibleSettingsSections(
+      BASE_SETTINGS.sdk_settings_schema!,
+      values,
+      "basic",
+    );
+    // llm.model and llm.api_key are critical but excluded as specially-rendered
+    // critic.enabled is critical and not excluded
+    const allBasicFields = basicSections.flatMap((s) => s.fields);
+    for (const field of allBasicFields) {
+      expect(SPECIALLY_RENDERED_KEYS.has(field.key)).toBe(false);
+      expect(field.prominence).toBe("critical");
+    }
 
-    expect(
-      getVisibleSettingsSections(
-        BASE_SETTINGS.sdk_settings_schema!,
-        { ...values, "critic.enabled": true },
-        true,
-      )[1].fields,
-    ).toHaveLength(2);
+    // In "all" view with critic enabled: should show dependent fields
+    const allSections = getVisibleSettingsSections(
+      BASE_SETTINGS.sdk_settings_schema!,
+      { ...values, "critic.enabled": true },
+      "all",
+    );
+    const criticSection = allSections.find((s) => s.key === "critic");
+    expect(criticSection?.fields).toHaveLength(2);
+  });
+
+  it("passes through all fields when excludeKeys is empty", () => {
+    const values = buildInitialSettingsFormValues(BASE_SETTINGS);
+    const sections = getVisibleSettingsSections(
+      BASE_SETTINGS.sdk_settings_schema!,
+      values,
+      "basic",
+      new Set(), // no exclusions
+    );
+    const allFieldKeys = sections.flatMap((s) => s.fields.map((f) => f.key));
+    expect(allFieldKeys).toContain("llm.model");
+    expect(allFieldKeys).toContain("llm.api_key");
   });
 
   it("builds a typed payload from dirty schema values", () => {

@@ -9,40 +9,75 @@ import { SettingsDropdownInput } from "#/components/features/settings/settings-d
 import { SettingsInput } from "#/components/features/settings/settings-input";
 import { SettingsSwitch } from "#/components/features/settings/settings-switch";
 import { LlmSettingsInputsSkeleton } from "#/components/features/settings/llm-settings/llm-settings-inputs-skeleton";
+import { ModelSelector } from "#/components/shared/modals/settings/model-selector";
 import { useSaveSettings } from "#/hooks/mutation/use-save-settings";
 import { usePermission } from "#/hooks/organizations/use-permissions";
+import { useAIConfigOptions } from "#/hooks/query/use-ai-config-options";
 import { useConfig } from "#/hooks/query/use-config";
 import { useMe } from "#/hooks/query/use-me";
 import { useSettings } from "#/hooks/query/use-settings";
 import { I18nKey } from "#/i18n/declaration";
 import { SettingsFieldSchema } from "#/types/settings";
+import { HelpLink } from "#/ui/help-link";
 import { Typography } from "#/ui/typography";
 import {
   displayErrorToast,
   displaySuccessToast,
 } from "#/utils/custom-toast-handlers";
 import { createPermissionGuard } from "#/utils/org/permission-guard";
+import { organizeModelsAndProviders } from "#/utils/organize-models-and-providers";
 import { retrieveAxiosErrorMessage } from "#/utils/retrieve-axios-error-message";
 import {
   buildInitialSettingsFormValues,
   buildSdkSettingsPayload,
   getVisibleSettingsSections,
-  hasAdvancedSettingsOverrides,
+  hasAdvancedSettings,
   hasMinorSettings,
+  inferInitialView,
   SettingsDirtyState,
   SettingsFormValues,
+  type SettingsView,
 } from "#/utils/sdk-settings-schema";
 import { cn } from "#/utils/utils";
 
+// ---------------------------------------------------------------------------
+// Help links – UI-only mapping from field keys to user-facing guidance.
+// ---------------------------------------------------------------------------
+const FIELD_HELP_LINKS: Record<
+  string,
+  { text: string; linkText: string; href: string }
+> = {
+  "llm.api_key": {
+    text: "Don't know your API key?",
+    linkText: "Click here for instructions.",
+    href: "https://docs.all-hands.dev/usage/local-setup#getting-an-api-key",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Generic schema field renderer
+// ---------------------------------------------------------------------------
 function FieldHelp({ field }: { field: SettingsFieldSchema }) {
-  if (!field.description) {
-    return null;
-  }
+  const helpLink = FIELD_HELP_LINKS[field.key];
 
   return (
-    <Typography.Paragraph className="text-tertiary-alt text-xs leading-5">
-      {field.description}
-    </Typography.Paragraph>
+    <>
+      {field.description ? (
+        <Typography.Paragraph className="text-tertiary-alt text-xs leading-5">
+          {field.description}
+        </Typography.Paragraph>
+      ) : null}
+      {helpLink ? (
+        <HelpLink
+          testId={`help-link-${field.key}`}
+          text={helpLink.text}
+          linkText={helpLink.linkText}
+          href={helpLink.href}
+          size="settings"
+          linkColor="white"
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -166,6 +201,132 @@ function SchemaField({
   );
 }
 
+// ---------------------------------------------------------------------------
+// View tier toggle
+// ---------------------------------------------------------------------------
+function ViewToggle({
+  view,
+  setView,
+  showAdvanced,
+  showAll,
+}: {
+  view: SettingsView;
+  setView: (v: SettingsView) => void;
+  showAdvanced: boolean;
+  showAll: boolean;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="flex items-center gap-2 mb-6">
+      <BrandButton
+        testId="llm-settings-basic-toggle"
+        variant={view === "basic" ? "primary" : "secondary"}
+        type="button"
+        onClick={() => setView("basic")}
+      >
+        {t(I18nKey.SETTINGS$BASIC)}
+      </BrandButton>
+      {showAdvanced ? (
+        <BrandButton
+          testId="llm-settings-advanced-toggle"
+          variant={view === "advanced" ? "primary" : "secondary"}
+          type="button"
+          onClick={() => setView("advanced")}
+        >
+          {t(I18nKey.SETTINGS$ADVANCED)}
+        </BrandButton>
+      ) : null}
+      {showAll ? (
+        <BrandButton
+          testId="llm-settings-all-toggle"
+          variant={view === "all" ? "primary" : "secondary"}
+          type="button"
+          onClick={() => setView("all")}
+        >
+          {t(I18nKey.SETTINGS$ALL)}
+        </BrandButton>
+      ) : null}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Specially-rendered critical fields (llm.model, llm.api_key, llm.base_url)
+// ---------------------------------------------------------------------------
+function CriticalFields({
+  models,
+  values,
+  isDisabled,
+  onChange,
+}: {
+  models: string[];
+  values: SettingsFormValues;
+  isDisabled: boolean;
+  onChange: (key: string, value: string | boolean) => void;
+}) {
+  const currentModel = String(values["llm.model"] ?? "");
+  const currentApiKey = String(values["llm.api_key"] ?? "");
+  const currentBaseUrl = String(values["llm.base_url"] ?? "");
+  const isApiKeySet = currentApiKey === "<hidden>" || currentApiKey.length > 0;
+  const apiKeyHelp = FIELD_HELP_LINKS["llm.api_key"];
+
+  return (
+    <div className="flex flex-col gap-4">
+      <ModelSelector
+        models={organizeModelsAndProviders(models)}
+        currentModel={currentModel || undefined}
+        isDisabled={isDisabled}
+        onChange={(_provider, model) => {
+          if (model !== null) {
+            onChange("llm.model", model);
+          }
+        }}
+      />
+
+      <SettingsInput
+        testId="sdk-settings-llm.api_key"
+        name="llm.api_key"
+        label="API Key"
+        type="password"
+        value={currentApiKey}
+        required={false}
+        showOptionalTag
+        isDisabled={isDisabled}
+        placeholder={isApiKeySet ? "<hidden>" : ""}
+        onChange={(val) => onChange("llm.api_key", val)}
+        className="w-full"
+      />
+      {apiKeyHelp ? (
+        <HelpLink
+          testId="help-link-llm.api_key"
+          text={apiKeyHelp.text}
+          linkText={apiKeyHelp.linkText}
+          href={apiKeyHelp.href}
+          size="settings"
+          linkColor="white"
+        />
+      ) : null}
+
+      <SettingsInput
+        testId="sdk-settings-llm.base_url"
+        name="llm.base_url"
+        label="Base URL"
+        type="text"
+        value={currentBaseUrl}
+        required={false}
+        showOptionalTag
+        isDisabled={isDisabled}
+        onChange={(val) => onChange("llm.base_url", val)}
+        className="w-full"
+      />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main screen
+// ---------------------------------------------------------------------------
 function LlmSettingsScreen() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -173,17 +334,19 @@ function LlmSettingsScreen() {
   const { data: settings, isLoading, isFetching } = useSettings();
   const { data: config } = useConfig();
   const { data: me } = useMe();
+  const { data: aiConfigOptions } = useAIConfigOptions();
   const { hasPermission } = usePermission(me?.role ?? "member");
 
   const isOssMode = config?.app_mode === "oss";
   const isReadOnly = isOssMode ? false : !hasPermission("edit_llm_settings");
 
-  const [view, setView] = React.useState<"basic" | "advanced">("basic");
+  const [view, setView] = React.useState<SettingsView>("basic");
   const [values, setValues] = React.useState<SettingsFormValues>({});
   const [dirty, setDirty] = React.useState<SettingsDirtyState>({});
 
   const schema = settings?.sdk_settings_schema ?? null;
-  const showAdvancedToggle = hasMinorSettings(schema);
+  const showAdvanced = hasAdvancedSettings(schema);
+  const showAll = hasMinorSettings(schema);
 
   React.useEffect(() => {
     const checkout = searchParams.get("checkout");
@@ -204,7 +367,7 @@ function LlmSettingsScreen() {
 
     setValues(buildInitialSettingsFormValues(settings));
     setDirty({});
-    setView(hasAdvancedSettingsOverrides(settings) ? "advanced" : "basic");
+    setView(inferInitialView(settings));
   }, [settings]);
 
   const visibleSections = React.useMemo(() => {
@@ -212,7 +375,7 @@ function LlmSettingsScreen() {
       return [];
     }
 
-    return getVisibleSettingsSections(schema, values, view === "advanced");
+    return getVisibleSettingsSections(schema, values, view);
   }, [schema, values, view]);
 
   const handleFieldChange = React.useCallback(
@@ -283,28 +446,23 @@ function LlmSettingsScreen() {
 
   return (
     <div data-testid="llm-settings-screen" className="h-full relative">
-      <div className="flex items-center gap-2 mb-6">
-        <BrandButton
-          testId="llm-settings-basic-toggle"
-          variant={view === "basic" ? "primary" : "secondary"}
-          type="button"
-          onClick={() => setView("basic")}
-        >
-          {t(I18nKey.SETTINGS$BASIC)}
-        </BrandButton>
-        {showAdvancedToggle ? (
-          <BrandButton
-            testId="llm-settings-advanced-toggle"
-            variant={view === "advanced" ? "primary" : "secondary"}
-            type="button"
-            onClick={() => setView("advanced")}
-          >
-            {t(I18nKey.SETTINGS$ADVANCED)}
-          </BrandButton>
-        ) : null}
-      </div>
+      <ViewToggle
+        view={view}
+        setView={setView}
+        showAdvanced={showAdvanced}
+        showAll={showAll}
+      />
 
       <div className="flex flex-col gap-8 pb-20">
+        {/* Specially-rendered critical fields */}
+        <CriticalFields
+          models={aiConfigOptions?.models ?? []}
+          values={values}
+          isDisabled={isReadOnly}
+          onChange={handleFieldChange}
+        />
+
+        {/* Generic schema-driven sections */}
         {visibleSections.map((section) => (
           <section key={section.key} className="flex flex-col gap-4">
             <Typography.H3>{section.label}</Typography.H3>

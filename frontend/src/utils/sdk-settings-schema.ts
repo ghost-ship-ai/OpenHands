@@ -1,4 +1,5 @@
 import {
+  SettingProminence,
   Settings,
   SettingsFieldSchema,
   SettingsSchema,
@@ -9,6 +10,23 @@ import {
 export type SettingsFormValues = Record<string, string | boolean>;
 export type SettingsDirtyState = Record<string, boolean>;
 export type SdkSettingsPayload = Record<string, SettingsValue>;
+
+export type SettingsView = "basic" | "advanced" | "all";
+
+/** Fields that are rendered by purpose-built components instead of the
+ *  generic `SchemaField` renderer. */
+export const SPECIALLY_RENDERED_KEYS = new Set([
+  "llm.model",
+  "llm.api_key",
+  "llm.base_url",
+]);
+
+/** Prominence tiers visible at each view level. */
+const VIEW_PROMINENCES: Record<SettingsView, Set<SettingProminence>> = {
+  basic: new Set<SettingProminence>(["critical"]),
+  advanced: new Set<SettingProminence>(["critical", "major"]),
+  all: new Set<SettingProminence>(["critical", "major", "minor"]),
+};
 
 function getSchemaFields(schema: SettingsSchema): SettingsFieldSchema[] {
   return schema.sections.flatMap((section) => section.fields);
@@ -23,6 +41,10 @@ function getCurrentSettingValue(
 
 function isChoiceField(field: SettingsFieldSchema): boolean {
   return field.choices.length > 0;
+}
+
+function isCriticalField(field: SettingsFieldSchema): boolean {
+  return field.prominence === "critical";
 }
 
 function isMinorField(field: SettingsFieldSchema): boolean {
@@ -132,24 +154,44 @@ export function buildInitialSettingsFormValues(
   );
 }
 
-export function hasAdvancedSettingsOverrides(settings: Settings): boolean {
+/** Determine which view tier to default to based on whether the user has
+ *  overridden any non-critical settings. */
+export function inferInitialView(settings: Settings): SettingsView {
   const schema = settings.sdk_settings_schema;
   if (!schema) {
-    return false;
+    return "basic";
   }
 
-  return getSchemaFields(schema).some((field) => {
-    if (!isMinorField(field)) {
-      return false;
+  let hasMinorOverride = false;
+  let hasMajorOverride = false;
+
+  for (const field of getSchemaFields(schema)) {
+    if (!isCriticalField(field)) {
+      const currentValue = getCurrentSettingValue(settings, field.key);
+      const isDifferent =
+        normalizeComparableValue(
+          field,
+          currentValue ?? field.default ?? null,
+        ) !== normalizeComparableValue(field, field.default ?? null);
+
+      if (isDifferent) {
+        if (isMinorField(field)) {
+          hasMinorOverride = true;
+        } else {
+          hasMajorOverride = true;
+        }
+      }
     }
+  }
 
-    const currentValue = getCurrentSettingValue(settings, field.key);
+  if (hasMinorOverride) return "all";
+  if (hasMajorOverride) return "advanced";
+  return "basic";
+}
 
-    return (
-      normalizeComparableValue(field, currentValue ?? field.default ?? null) !==
-      normalizeComparableValue(field, field.default ?? null)
-    );
-  });
+/** @deprecated Use {@link inferInitialView} instead. */
+export function hasAdvancedSettingsOverrides(settings: Settings): boolean {
+  return inferInitialView(settings) !== "basic";
 }
 
 export function isSettingsFieldVisible(
@@ -260,32 +302,40 @@ export function buildSdkSettingsPayload(
 
 function isFieldVisibleInView(
   field: SettingsFieldSchema,
-  showAdvanced: boolean,
+  view: SettingsView,
 ): boolean {
-  return showAdvanced || !isMinorField(field);
+  return VIEW_PROMINENCES[view].has(field.prominence);
 }
 
+/** Return sections with fields filtered for the current view tier.
+ *  Specially-rendered fields are excluded from the generic list. */
 export function getVisibleSettingsSections(
   schema: SettingsSchema,
   values: SettingsFormValues,
-  showAdvanced: boolean,
+  view: SettingsView,
+  excludeKeys: Set<string> = SPECIALLY_RENDERED_KEYS,
 ): SettingsSectionSchema[] {
   return schema.sections
     .map((section) => ({
       ...section,
       fields: section.fields.filter(
         (field) =>
-          isFieldVisibleInView(field, showAdvanced) &&
+          !excludeKeys.has(field.key) &&
+          isFieldVisibleInView(field, view) &&
           isSettingsFieldVisible(field, values),
       ),
     }))
     .filter((section) => section.fields.length > 0);
 }
 
-export function hasMinorSettings(schema: SettingsSchema | null): boolean {
-  if (!schema) {
-    return false;
-  }
+/** Whether the schema has any fields beyond "critical" prominence. */
+export function hasAdvancedSettings(schema: SettingsSchema | null): boolean {
+  if (!schema) return false;
+  return getSchemaFields(schema).some((f) => f.prominence !== "critical");
+}
 
-  return getSchemaFields(schema).some((field) => field.prominence === "minor");
+/** Whether the schema has any "minor" prominence fields. */
+export function hasMinorSettings(schema: SettingsSchema | null): boolean {
+  if (!schema) return false;
+  return getSchemaFields(schema).some((f) => f.prominence === "minor");
 }
