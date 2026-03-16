@@ -192,20 +192,31 @@ class RemoteSandboxService(SandboxService):
         the status of a runtime is inconsistent. It is divided between a "status" which
         cannot be trusted (It sometimes returns  "running" for cases when the pod is
         still starting) and a "pod_status" which is not returned for list
-        operations."""
+        operations.
+
+        Note: We check for "paused" status first because pod_status doesn't track
+        paused state - a paused sandbox may still have pod_status "ready" which
+        would incorrectly map to RUNNING.
+        """
         if not runtime:
             return SandboxStatus.MISSING
 
+        # Check runtime status first for paused/stopped states that pod_status doesn't track
+        runtime_status = (runtime.get('status') or '').lower()
+        if runtime_status in ('paused', 'stopped'):
+            mapped_status = STATUS_MAPPING.get(runtime_status)
+            if mapped_status is not None:
+                return mapped_status
+
+        # Use pod_status for running/starting/error states (more reliable for these)
         status = None
         pod_status = (runtime.get('pod_status') or '').lower()
         if pod_status:
             status = POD_STATUS_MAPPING.get(pod_status, None)
 
-        # If we failed to get the status from the pod status, fall back to status
-        if status is None:
-            runtime_status = runtime.get('status')
-            if runtime_status:
-                status = STATUS_MAPPING.get(runtime_status.lower(), None)
+        # Fall back to runtime status for remaining cases
+        if status is None and runtime_status:
+            status = STATUS_MAPPING.get(runtime_status, None)
 
         if status is None:
             return SandboxStatus.MISSING
