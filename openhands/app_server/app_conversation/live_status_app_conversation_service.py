@@ -879,12 +879,7 @@ class LiveStatusAppConversationService(AppConversationServiceBase):
     def _get_agent_settings(
         self, user: UserInfo, llm_model: str | None
     ) -> AgentSettings:
-        """Resolve SDK ``AgentSettings`` for this request.
-
-        Applies model override and, for users going through the
-        OpenHands LLM proxy, fills in the critic endpoint so that
-        ``create_agent()`` builds a correctly-routed critic.
-        """
+        """Resolve SDK ``AgentSettings`` for this request."""
         settings = user.to_agent_settings()
         if llm_model is not None:
             settings = settings.model_copy(
@@ -894,30 +889,6 @@ class LiveStatusAppConversationService(AppConversationServiceBase):
                     ),
                 }
             )
-
-        # Resolve critic endpoint for proxy users
-        if (
-            settings.verification.critic_enabled
-            and not settings.verification.critic_server_url
-            and settings.llm.model.startswith('openhands/')
-        ):
-            proxy_url = (
-                settings.llm.base_url or self.openhands_provider_base_url
-            )
-            if proxy_url:
-                settings = settings.model_copy(
-                    update={
-                        'verification': settings.verification.model_copy(
-                            update={
-                                'critic_server_url': (
-                                    f'{proxy_url.rstrip("/")}/vllm'
-                                ),
-                                'critic_model_name': 'critic',
-                            }
-                        ),
-                    }
-                )
-
         return settings
 
     def _configure_llm(self, user: UserInfo, llm_model: str | None) -> LLM:

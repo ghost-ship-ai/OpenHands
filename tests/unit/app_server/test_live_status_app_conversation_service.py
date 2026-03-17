@@ -841,37 +841,23 @@ class TestLiveStatusAppConversationService:
         # Assert
         assert path == '/workspace/project/agents-tmp-config/PLAN.md'
 
-    def test_get_agent_settings_resolves_critic_proxy(self):
-        """_get_agent_settings sets critic endpoint for openhands/ models."""
+    def test_get_agent_settings_passes_through_critic_settings(self):
+        """_get_agent_settings passes critic settings through unchanged."""
         self.mock_user.sdk_settings_values = {
             'llm.model': 'openhands/default',
             'verification.critic_enabled': True,
+            'verification.critic_server_url': 'https://my-critic.example.com',
+            'verification.critic_model_name': 'my-critic',
         }
-        self.service.openhands_provider_base_url = (
-            'https://llm-proxy.app.all-hands.dev'
-        )
 
         settings = self.service._get_agent_settings(self.mock_user, None)
 
         assert settings.verification.critic_enabled is True
         assert (
             settings.verification.critic_server_url
-            == 'https://llm-proxy.app.all-hands.dev/vllm'
+            == 'https://my-critic.example.com'
         )
-        assert settings.verification.critic_model_name == 'critic'
-
-    def test_get_agent_settings_no_critic_proxy_for_external_models(self):
-        """_get_agent_settings leaves critic settings alone for non-proxy models."""
-        self.mock_user.sdk_settings_values = {
-            'llm.model': 'anthropic/claude-3',
-            'verification.critic_enabled': True,
-        }
-
-        settings = self.service._get_agent_settings(self.mock_user, None)
-
-        # critic_enabled honored, but no proxy routing applied
-        assert settings.verification.critic_enabled is True
-        assert settings.verification.critic_server_url is None
+        assert settings.verification.critic_model_name == 'my-critic'
 
     @patch(
         'openhands.app_server.app_conversation.live_status_app_conversation_service.get_planning_tools',
