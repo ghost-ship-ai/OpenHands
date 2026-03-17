@@ -1,5 +1,3 @@
-import { Typography } from "#/ui/typography";
-
 interface StepInputProps {
   id: string;
   label: string;
@@ -10,10 +8,14 @@ interface StepInputProps {
 export function StepInput({ id, label, value, onChange }: StepInputProps) {
   return (
     <div className="flex flex-col gap-1.5 w-full">
-      <Typography.Text className="text-sm font-medium text-neutral-400">
+      <label
+        htmlFor={`step-input-${id}`}
+        className="text-sm font-medium text-neutral-400 cursor-pointer"
+      >
         {label}
-      </Typography.Text>
+      </label>
       <input
+        id={`step-input-${id}`}
         data-testid={`step-input-${id}`}
         type="text"
         value={value}
