@@ -9,6 +9,7 @@ const mockMutate = vi.fn();
 const mockNavigate = vi.fn();
 const mockUseConfig = vi.fn();
 const mockTrackOnboardingCompleted = vi.fn();
+const mockIsSelfHosted = vi.fn();
 
 vi.mock("react-router", async (importOriginal) => {
   const original = await importOriginal<typeof import("react-router")>();
@@ -34,6 +35,15 @@ vi.mock("#/hooks/use-tracking", () => ({
   }),
 }));
 
+vi.mock("#/utils/feature-flags", async (importOriginal) => {
+  const original =
+    await importOriginal<typeof import("#/utils/feature-flags")>();
+  return {
+    ...original,
+    IS_SELF_HOSTED: () => mockIsSelfHosted(),
+  };
+});
+
 const renderOnboardingForm = () => {
   return renderWithProviders(
     <MemoryRouter>
@@ -42,12 +52,13 @@ const renderOnboardingForm = () => {
   );
 };
 
-describe("OnboardingForm", () => {
+describe("OnboardingForm - SaaS Mode", () => {
   beforeEach(() => {
     mockMutate.mockClear();
     mockNavigate.mockClear();
     mockTrackOnboardingCompleted.mockClear();
-    // Default to saas mode
+    // Default to saas mode (IS_SELF_HOSTED returns false)
+    mockIsSelfHosted.mockReturnValue(false);
     mockUseConfig.mockReturnValue({
       data: { app_mode: "saas" },
       isLoading: false,
@@ -318,30 +329,33 @@ describe("OnboardingForm", () => {
   });
 });
 
-describe("OnboardingForm - OSS Mode", () => {
+describe("OnboardingForm - Self-Hosted Mode", () => {
   beforeEach(() => {
     mockMutate.mockClear();
     mockNavigate.mockClear();
     mockTrackOnboardingCompleted.mockClear();
+    // Self-hosted mode: IS_SELF_HOSTED returns true
+    mockIsSelfHosted.mockReturnValue(true);
+    // Self-hosted deployments use app_mode: "saas"
     mockUseConfig.mockReturnValue({
-      data: { app_mode: "oss" },
+      data: { app_mode: "saas" },
       isLoading: false,
     });
   });
 
-  it("should display step progress indicator with 3 bars for oss mode", () => {
+  it("should display step progress indicator with 3 bars for self-hosted mode", () => {
     renderOnboardingForm();
 
     const stepHeader = screen.getByTestId("step-header");
     const progressBars = stepHeader.querySelectorAll(".rounded-full");
-    // OSS mode has 3 steps: org_name, org_size, use_case (no role step)
+    // Self-hosted mode has 3 steps: org_name, org_size, use_case (no role step)
     expect(progressBars).toHaveLength(3);
   });
 
   it("should render input fields on the first step (org_name question)", () => {
     renderOnboardingForm();
 
-    // OSS mode starts with org_name input step
+    // Self-hosted mode starts with org_name input step
     expect(screen.getByTestId("step-input-org_name")).toBeInTheDocument();
     expect(screen.getByTestId("step-input-org_domain")).toBeInTheDocument();
   });
@@ -398,7 +412,10 @@ describe("OnboardingForm - OSS Mode", () => {
 
     // Fill in input fields
     await user.type(screen.getByTestId("step-input-org_name"), "My Company");
-    await user.type(screen.getByTestId("step-input-org_domain"), "mycompany.com");
+    await user.type(
+      screen.getByTestId("step-input-org_domain"),
+      "mycompany.com",
+    );
     await user.click(screen.getByRole("button", { name: /next/i }));
 
     // Verify we're on step 2 (org_size) - should show option buttons
@@ -406,7 +423,7 @@ describe("OnboardingForm - OSS Mode", () => {
     expect(screen.queryByTestId("step-input-org_name")).not.toBeInTheDocument();
   });
 
-  it("should complete full OSS onboarding flow with input values and selections", async () => {
+  it("should complete full self-hosted onboarding flow with input values and selections", async () => {
     const user = userEvent.setup();
     renderOnboardingForm();
 
@@ -419,7 +436,7 @@ describe("OnboardingForm - OSS Mode", () => {
     await user.click(screen.getByTestId("step-option-org_11_50"));
     await user.click(screen.getByRole("button", { name: /next/i }));
 
-    // Step 3 - select use case (multi-select, last step in OSS mode)
+    // Step 3 - select use case (multi-select, last step in self-hosted mode)
     await user.click(screen.getByTestId("step-option-new_features"));
     await user.click(screen.getByTestId("step-option-fixing_bugs"));
     await user.click(screen.getByRole("button", { name: /finish/i }));
@@ -437,11 +454,11 @@ describe("OnboardingForm - OSS Mode", () => {
     });
   });
 
-  it("should NOT track onboarding completion to PostHog in OSS mode", async () => {
+  it("should track onboarding completion to PostHog in self-hosted mode", async () => {
     const user = userEvent.setup();
     renderOnboardingForm();
 
-    // Complete the full OSS onboarding flow
+    // Complete the full self-hosted onboarding flow
     await user.type(screen.getByTestId("step-input-org_name"), "Acme Corp");
     await user.type(screen.getByTestId("step-input-org_domain"), "acme.com");
     await user.click(screen.getByRole("button", { name: /next/i }));
@@ -455,11 +472,16 @@ describe("OnboardingForm - OSS Mode", () => {
     // Verify onboarding was submitted
     expect(mockMutate).toHaveBeenCalledTimes(1);
 
-    // Verify PostHog tracking was NOT called for OSS mode
-    expect(mockTrackOnboardingCompleted).not.toHaveBeenCalled();
+    // Verify PostHog tracking was called
+    expect(mockTrackOnboardingCompleted).toHaveBeenCalledTimes(1);
+    expect(mockTrackOnboardingCompleted).toHaveBeenCalledWith({
+      role: undefined,
+      orgSize: "org_11_50",
+      useCase: ["new_features"],
+    });
   });
 
-  it("should not show role step in OSS mode", async () => {
+  it("should not show role step in self-hosted mode", async () => {
     const user = userEvent.setup();
     renderOnboardingForm();
 
@@ -495,7 +517,9 @@ describe("OnboardingForm - OSS Mode", () => {
     await user.click(screen.getByRole("button", { name: /back/i }));
 
     // Verify input values are preserved
-    expect(screen.getByTestId("step-input-org_name")).toHaveValue("Test Company");
+    expect(screen.getByTestId("step-input-org_name")).toHaveValue(
+      "Test Company",
+    );
     expect(screen.getByTestId("step-input-org_domain")).toHaveValue(
       "testcompany.com",
     );

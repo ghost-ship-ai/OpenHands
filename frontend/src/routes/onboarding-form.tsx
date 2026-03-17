@@ -8,11 +8,15 @@ import { I18nKey } from "#/i18n/declaration";
 import OpenHandsLogoWhite from "#/assets/branding/openhands-logo-white.svg?react";
 import { useSubmitOnboarding } from "#/hooks/mutation/use-submit-onboarding";
 import { useTracking } from "#/hooks/use-tracking";
-import { ENABLE_ONBOARDING } from "#/utils/feature-flags";
+import { ENABLE_ONBOARDING, IS_SELF_HOSTED } from "#/utils/feature-flags";
 import { cn } from "#/utils/utils";
 import { ModalBackdrop } from "#/components/shared/modals/modal-backdrop";
 import { useConfig } from "#/hooks/query/use-config";
-import { ONBOARDING_FORM, OnboardingQuestion } from "#/constants/onboarding";
+import {
+  ONBOARDING_FORM,
+  OnboardingQuestion,
+  OnboardingAppMode,
+} from "#/constants/onboarding";
 
 export const clientLoader = async () => {
   if (!ENABLE_ONBOARDING()) {
@@ -23,6 +27,13 @@ export const clientLoader = async () => {
 };
 
 type OnboardingAnswers = Record<string, string | string[]>;
+
+function getOnboardingAppMode(): OnboardingAppMode {
+  if (IS_SELF_HOSTED()) {
+    return "self-hosted";
+  }
+  return "saas";
+}
 
 function getAnswerAsArray(answers: OnboardingAnswers, key: string): string[] {
   const value = answers[key];
@@ -55,20 +66,18 @@ function getTranslatedInputFields(
 function OnboardingForm() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  // useConfig is disabled on intermediate pages by default
-  // override enabled so /onboarding can use `config.app_mode` to filter questions for the correct mode (oss vs saas)
   const config = useConfig({ enabled: true });
   const { mutate: submitOnboarding } = useSubmitOnboarding();
   const { trackOnboardingCompleted } = useTracking();
 
-  const appMode = config.data?.app_mode ?? "oss";
+  const onboardingAppMode: OnboardingAppMode = getOnboardingAppMode();
 
   const steps = React.useMemo(
     () =>
       ONBOARDING_FORM.filter((step) =>
-        step.app_mode.includes(appMode as "oss" | "saas"),
+        step.app_mode.includes(onboardingAppMode),
       ),
-    [appMode],
+    [onboardingAppMode],
   );
 
   const [currentStepIndex, setCurrentStepIndex] = React.useState(0);
@@ -104,11 +113,6 @@ function OnboardingForm() {
     }
     return result;
   }, [answers]);
-
-  // Wait for config to load before rendering to show correct questions
-  if (!config.data) {
-    return null;
-  }
 
   const handleSelectOption = (optionId: string) => {
     if (!currentStep) return;
@@ -148,7 +152,7 @@ function OnboardingForm() {
       submitOnboarding({ selections: answers });
 
       // Only track onboarding for SaaS users
-      if (appMode === "saas") {
+      if (config.data?.app_mode === "saas") {
         trackOnboardingCompleted({
           role: typeof answers.role === "string" ? answers.role : undefined,
           orgSize:

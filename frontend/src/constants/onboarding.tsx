@@ -1,8 +1,10 @@
 import { I18nKey } from "#/i18n/declaration";
 
+export type OnboardingAppMode = "saas" | "self-hosted";
+
 interface BaseOnboardingQuestion {
   id: string;
-  app_mode: ("oss" | "saas")[];
+  app_mode: OnboardingAppMode[];
   questionKey: I18nKey;
   subtitleKey?: I18nKey;
 }
@@ -31,7 +33,7 @@ export const ONBOARDING_FORM: OnboardingQuestion[] = [
   {
     id: "org_name",
     type: "input",
-    app_mode: ["oss"],
+    app_mode: ["self-hosted"],
     questionKey: I18nKey.ONBOARDING$ORG_NAME_QUESTION,
     inputOptions: [
       { key: I18nKey.ONBOARDING$ORG_NAME_INPUT_NAME, id: "org_name" },
@@ -41,7 +43,7 @@ export const ONBOARDING_FORM: OnboardingQuestion[] = [
   {
     id: "org_size",
     type: "single",
-    app_mode: ["oss", "saas"],
+    app_mode: ["saas", "self-hosted"],
     questionKey: I18nKey.ONBOARDING$ORG_SIZE_QUESTION,
     subtitleKey: I18nKey.ONBOARDING$ORG_SIZE_SUBTITLE,
     answerOptions: [
@@ -55,7 +57,7 @@ export const ONBOARDING_FORM: OnboardingQuestion[] = [
   {
     id: "use_case",
     type: "multi",
-    app_mode: ["oss", "saas"],
+    app_mode: ["saas", "self-hosted"],
     questionKey: I18nKey.ONBOARDING$USE_CASE_QUESTION,
     subtitleKey: I18nKey.ONBOARDING$USE_CASE_SUBTITLE,
     answerOptions: [
