@@ -371,8 +371,11 @@ export function ConversationWebSocketProvider({
               setErrorMessage(event.detail);
             }
           } else {
-            // Clear non-persistent error messages on any non-ConversationErrorEvent
-            removeErrorMessage();
+            // Clear error messages on any non-ConversationErrorEvent
+            // Force clear for ActionEvents since they indicate the agent is actively working
+            // (e.g., after credits are added and agent responds successfully)
+            const shouldForceClear = isActionEvent(event);
+            removeErrorMessage(shouldForceClear);
           }
 
           // Track credit limit reached if AgentErrorEvent has budget-related error
@@ -534,8 +537,11 @@ export function ConversationWebSocketProvider({
               setErrorMessage(event.detail);
             }
           } else {
-            // Clear non-persistent error messages on any non-ConversationErrorEvent
-            removeErrorMessage();
+            // Clear error messages on any non-ConversationErrorEvent
+            // Force clear for ActionEvents since they indicate the agent is actively working
+            // (e.g., after credits are added and agent responds successfully)
+            const shouldForceClear = isActionEvent(event);
+            removeErrorMessage(shouldForceClear);
           }
 
           // Handle AgentErrorEvent specifically
