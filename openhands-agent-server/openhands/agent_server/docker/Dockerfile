@@ -247,12 +247,17 @@ EXPOSE ${PORT} ${NOVNC_PORT}
 FROM base-image AS source
 ARG USERNAME
 ENV UV_PYTHON_INSTALL_DIR=/agent-server/uv-managed-python
+# Expose SDK packages (openhands-sdk, openhands-workspace, openhands-tools) to
+# the system Python so that user scripts (e.g. automations using
+# OpenHandsCloudWorkspace with saas_runtime_mode) can import them directly.
+ENV PYTHONPATH=/agent-server/.venv/lib/python3.13/site-packages
 COPY --chown=${USERNAME}:${USERNAME} --from=builder /agent-server /agent-server
 ENTRYPOINT ["/agent-server/.venv/bin/python", "-m", "openhands.agent_server"]
 
 FROM base-image-minimal AS source-minimal
 ARG USERNAME
 ENV UV_PYTHON_INSTALL_DIR=/agent-server/uv-managed-python
+ENV PYTHONPATH=/agent-server/.venv/lib/python3.13/site-packages
 COPY --chown=${USERNAME}:${USERNAME} --from=builder /agent-server /agent-server
 ENTRYPOINT ["/agent-server/.venv/bin/python", "-m", "openhands.agent_server"]
 
