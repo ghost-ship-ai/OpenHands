@@ -3,6 +3,7 @@
 from unittest.mock import MagicMock, patch
 
 import httpx
+import pytest
 
 
 def test_api_timeout_is_used_in_client():
@@ -384,3 +385,68 @@ def test_resume_existing_sandbox_sets_internal_id():
     # Clean up
     workspace._sandbox_id = None
     workspace.cleanup()
+
+
+# --- saas_runtime_mode tests ---
+
+_CLOUD_URL = "https://app.all-hands.dev"
+_CLOUD_KEY = "test-key"
+
+
+def _make_saas_workspace(**overrides):
+    """Helper to create an OpenHandsCloudWorkspace in saas_runtime_mode."""
+    from openhands.workspace import OpenHandsCloudWorkspace
+
+    kwargs = {
+        "saas_runtime_mode": True,
+        "cloud_api_url": _CLOUD_URL,
+        "cloud_api_key": _CLOUD_KEY,
+        **overrides,
+    }
+    return OpenHandsCloudWorkspace(**kwargs)
+
+
+def test_saas_runtime_mode_skips_sandbox_creation():
+    """In saas_runtime_mode, no sandbox is created or resumed."""
+    workspace = _make_saas_workspace()
+
+    assert workspace.saas_runtime_mode is True
+    assert workspace.host == "http://localhost:60000"
+    assert workspace._sandbox_id is None
+
+    workspace.cleanup()
+
+
+def test_saas_runtime_mode_custom_port():
+    """Custom agent_server_port is reflected in host URL."""
+    workspace = _make_saas_workspace(agent_server_port=9999)
+
+    assert workspace.host == "http://localhost:9999"
+    workspace.cleanup()
+
+
+def test_saas_runtime_mode_cloud_credentials_available():
+    """Cloud API fields are available for get_llms / get_secrets."""
+    workspace = _make_saas_workspace(
+        cloud_api_url="https://app.all-hands.dev/",
+        cloud_api_key="my-key",
+    )
+
+    assert workspace.cloud_api_url == "https://app.all-hands.dev"
+    assert workspace._api_headers == {"Authorization": "Bearer my-key"}
+    workspace.cleanup()
+
+
+def test_saas_runtime_mode_cleanup_does_not_delete_sandbox():
+    """cleanup() in saas_runtime_mode should not call any Cloud API."""
+    workspace = _make_saas_workspace()
+
+    with patch.object(workspace, "_send_api_request") as mock_req:
+        workspace.cleanup()
+        mock_req.assert_not_called()
+
+
+def test_saas_runtime_mode_context_manager():
+    """Context manager works in saas_runtime_mode without side effects."""
+    with _make_saas_workspace() as ws:
+        assert ws.host == "http://localhost:60000"

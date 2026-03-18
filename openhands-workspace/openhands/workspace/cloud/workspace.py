@@ -26,6 +26,9 @@ AGENT_SERVER = "AGENT_SERVER"
 # Number of retry attempts for transient API failures
 _MAX_RETRIES = 3
 
+# Default port the agent-server listens on inside a Cloud Runtime
+DEFAULT_AGENT_SERVER_PORT = 60000
+
 
 def _is_retryable_error(error: BaseException) -> bool:
     """Return True for transient errors that are worth retrying."""
@@ -40,6 +43,11 @@ class OpenHandsCloudWorkspace(RemoteWorkspace):
     This workspace connects to OpenHands Cloud (app.all-hands.dev) to provision
     and manage sandboxed environments for agent execution.
 
+    When ``saas_runtime_mode=True``, the workspace assumes it is already running
+    inside an OpenHands Cloud Runtime sandbox.  Instead of creating or managing
+    a sandbox via the Cloud API it connects directly to the local agent-server
+    at ``http://localhost:<agent_server_port>``.
+
     Example:
         workspace = OpenHandsCloudWorkspace(
             cloud_api_url="https://app.all-hands.dev",
@@ -52,6 +60,13 @@ class OpenHandsCloudWorkspace(RemoteWorkspace):
             cloud_api_key="your-api-key",
             sandbox_spec_id="ghcr.io/openhands/agent-server:main-python",
         )
+
+        # Running inside an OpenHands Cloud Runtime (SaaS runtime mode)
+        workspace = OpenHandsCloudWorkspace(
+            saas_runtime_mode=True,
+            cloud_api_url="https://app.all-hands.dev",
+            cloud_api_key=os.environ["OPENHANDS_API_KEY"],
+        )
     """
 
     # Parent fields
@@ -61,31 +76,55 @@ class OpenHandsCloudWorkspace(RemoteWorkspace):
     )
     host: str = Field(
         default="undefined",
-        description="The agent server URL. Set automatically after sandbox starts.",
+        description=("The agent server URL. Set automatically after sandbox starts."),
+    )
+
+    # SaaS runtime mode
+    saas_runtime_mode: bool = Field(
+        default=False,
+        description=(
+            "When True, assume the SDK is running inside an OpenHands Cloud "
+            "Runtime and connect to the local agent-server instead of "
+            "provisioning a sandbox via the Cloud API."
+        ),
+    )
+    agent_server_port: int = Field(
+        default=DEFAULT_AGENT_SERVER_PORT,
+        description=(
+            "Port of the local agent-server. Only used when saas_runtime_mode=True."
+        ),
     )
 
     # Cloud API fields
     cloud_api_url: str = Field(
-        description="Base URL of OpenHands Cloud API (e.g., https://app.all-hands.dev)"
+        description=(
+            "Base URL of OpenHands Cloud API "
+            "(e.g., https://app.all-hands.dev). "
+            "Required in all modes — used for get_llms / get_secrets."
+        ),
     )
     cloud_api_key: str = Field(
-        description="API key for authenticating with OpenHands Cloud"
+        description=(
+            "API key for authenticating with OpenHands Cloud. "
+            "Required in all modes — used for get_llms / get_secrets."
+        ),
     )
     sandbox_spec_id: str | None = Field(
         default=None,
-        description="Optional sandbox specification ID (e.g., container image)",
+        description=("Optional sandbox specification ID (e.g., container image)"),
     )
 
     # Lifecycle options
     init_timeout: float = Field(
-        default=300.0, description="Sandbox initialization timeout in seconds"
+        default=300.0,
+        description="Sandbox initialization timeout in seconds",
     )
     api_timeout: float = Field(
         default=60.0, description="API request timeout in seconds"
     )
     keep_alive: bool = Field(
         default=False,
-        description="If True, keep sandbox alive on cleanup instead of deleting",
+        description=("If True, keep sandbox alive on cleanup instead of deleting"),
     )
 
     # Sandbox ID - can be provided to resume an existing sandbox
@@ -93,7 +132,8 @@ class OpenHandsCloudWorkspace(RemoteWorkspace):
         default=None,
         description=(
             "Optional sandbox ID to resume. If provided, the workspace will "
-            "attempt to resume the existing sandbox instead of creating a new one."
+            "attempt to resume the existing sandbox instead of creating a "
+            "new one."
         ),
     )
 
@@ -131,12 +171,25 @@ class OpenHandsCloudWorkspace(RemoteWorkspace):
         """Set up the sandbox and initialize the workspace."""
         self.cloud_api_url = self.cloud_api_url.rstrip("/")
 
-        try:
-            self._start_sandbox()
-            super().model_post_init(context)
-        except Exception:
-            self.cleanup()
-            raise
+        if self.saas_runtime_mode:
+            self._init_saas_runtime_mode()
+        else:
+            try:
+                self._start_sandbox()
+                super().model_post_init(context)
+            except Exception:
+                self.cleanup()
+                raise
+
+    def _init_saas_runtime_mode(self) -> None:
+        """Initialize in SaaS runtime mode — connect to local agent-server."""
+        self.host = f"http://localhost:{self.agent_server_port}"
+        logger.info(
+            f"SaaS runtime mode: connecting to local agent-server at {self.host}"
+        )
+        self.reset_client()
+        # Trigger parent mixin init (strips trailing slash, etc.)
+        super().model_post_init(None)
 
     def _start_sandbox(self) -> None:
         """Start a new sandbox or resume an existing one via Cloud API.
@@ -352,7 +405,26 @@ class OpenHandsCloudWorkspace(RemoteWorkspace):
         return response
 
     def cleanup(self) -> None:
-        """Clean up the sandbox by deleting it."""
+        """Clean up the sandbox by deleting it.
+
+        In SaaS runtime mode the sandbox is managed externally, so only the
+        HTTP client is closed.
+        """
+        # Guard against __del__ on partially-constructed instances
+        # (e.g. when validation fails before all fields are initialised).
+        try:
+            saas_mode = self.saas_runtime_mode
+        except AttributeError:
+            return
+
+        if saas_mode:
+            try:
+                if self._client:
+                    self._client.close()
+            except Exception:
+                pass
+            return
+
         if not self._sandbox_id:
             return
 
