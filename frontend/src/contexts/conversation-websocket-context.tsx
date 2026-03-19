@@ -808,15 +808,13 @@ export function ConversationWebSocketProvider({
   // Only attempt WebSocket connection when we have a valid URL
   // This prevents connection attempts during task polling phase
   const websocketUrl = wsUrl;
-  const { socket: mainSocket } = useWebSocket(
-    websocketUrl || "",
-    mainWebsocketOptions,
-  );
+  const { socket: mainSocket, sendMessage: sendMainSocketMessage } =
+    useWebSocket(websocketUrl || "", mainWebsocketOptions);
 
-  const { socket: planningAgentSocket } = useWebSocket(
-    planningAgentWsUrl || "",
-    planningWebsocketOptions,
-  );
+  const {
+    socket: planningAgentSocket,
+    sendMessage: sendPlanningSocketMessage,
+  } = useWebSocket(planningAgentWsUrl || "", planningWebsocketOptions);
 
   // V1 send message function via WebSocket
   // Falls back to REST API queue when WebSocket is not connected
@@ -825,8 +823,17 @@ export function ConversationWebSocketProvider({
       const currentMode = useConversationStore.getState().conversationMode;
       const currentSocket =
         currentMode === "plan" ? planningAgentSocket : mainSocket;
+      const currentConnectionState =
+        currentMode === "plan" ? planningConnectionState : mainConnectionState;
+      const sendOverSocket =
+        currentMode === "plan"
+          ? sendPlanningSocketMessage
+          : sendMainSocketMessage;
 
-      if (!currentSocket || currentSocket.readyState !== WebSocket.OPEN) {
+      if (
+        currentConnectionState !== "OPEN" &&
+        (!currentSocket || currentSocket.readyState !== WebSocket.OPEN)
+      ) {
         // WebSocket not connected - queue message via REST API
         // Message will be delivered automatically when conversation becomes ready
         if (!conversationId) {
@@ -854,8 +861,9 @@ export function ConversationWebSocketProvider({
       }
 
       try {
-        // Send message through WebSocket as JSON
-        currentSocket.send(JSON.stringify(message));
+        // Send message through WebSocket as JSON using the hook helper so it
+        // always targets the latest socket instance held in the hook ref.
+        sendOverSocket(JSON.stringify(message));
         return { queued: false };
       } catch (error) {
         const errorMessage =
@@ -864,7 +872,16 @@ export function ConversationWebSocketProvider({
         throw error;
       }
     },
-    [mainSocket, planningAgentSocket, setErrorMessage, conversationId],
+    [
+      mainConnectionState,
+      mainSocket,
+      planningConnectionState,
+      planningAgentSocket,
+      sendMainSocketMessage,
+      sendPlanningSocketMessage,
+      setErrorMessage,
+      conversationId,
+    ],
   );
 
   // Track main socket state changes
