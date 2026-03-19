@@ -1,7 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { FormInput } from "#/components/features/onboarding/form-input";
+import {
+  FormInput,
+  isValidEmail,
+} from "#/components/features/onboarding/form-input";
 
 describe("FormInput", () => {
   const defaultProps = {
@@ -167,6 +170,46 @@ describe("FormInput", () => {
 
       const textarea = screen.getByTestId("form-input-test-input");
       expect(textarea).toHaveClass("border-red-500");
+    });
+
+    it("should show error border for invalid email when showError is true", () => {
+      render(
+        <FormInput {...defaultProps} type="email" value="invalid" showError />,
+      );
+
+      const input = screen.getByTestId("form-input-test-input");
+      expect(input).toHaveClass("border-red-500");
+    });
+
+    it("should not show error border for valid email when showError is true", () => {
+      render(
+        <FormInput
+          {...defaultProps}
+          type="email"
+          value="test@example.com"
+          showError
+        />,
+      );
+
+      const input = screen.getByTestId("form-input-test-input");
+      expect(input).not.toHaveClass("border-red-500");
+    });
+  });
+
+  describe("isValidEmail", () => {
+    it("should return true for valid emails", () => {
+      expect(isValidEmail("test@example.com")).toBe(true);
+      expect(isValidEmail("user.name@domain.org")).toBe(true);
+      expect(isValidEmail("user+tag@domain.co.uk")).toBe(true);
+    });
+
+    it("should return false for invalid emails", () => {
+      expect(isValidEmail("")).toBe(false);
+      expect(isValidEmail("a@b")).toBe(false);
+      expect(isValidEmail("invalid")).toBe(false);
+      expect(isValidEmail("@domain.com")).toBe(false);
+      expect(isValidEmail("user@")).toBe(false);
+      expect(isValidEmail("user@.com")).toBe(false);
     });
   });
 });

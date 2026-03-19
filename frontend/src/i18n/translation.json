@@ -20728,6 +20728,23 @@
     "tr": "Gönder",
     "uk": "Надіслати"
   },
+  "ENTERPRISE$FORM_SUBMITTING": {
+    "en": "Submitting...",
+    "ja": "送信中...",
+    "zh-CN": "提交中...",
+    "zh-TW": "提交中...",
+    "ko-KR": "제출 중...",
+    "no": "Sender inn...",
+    "ar": "جارٍ الإرسال...",
+    "de": "Wird gesendet...",
+    "fr": "Envoi en cours...",
+    "it": "Invio in corso...",
+    "pt": "Enviando...",
+    "es": "Enviando...",
+    "ca": "Enviant...",
+    "tr": "Gönderiliyor...",
+    "uk": "Надсилається..."
+  },
   "ENTERPRISE$REQUEST_SUBMITTED_TITLE": {
     "en": "Request submitted",
     "ja": "リクエストが送信されました",

@@ -299,5 +299,82 @@ describe("InformationRequestForm", () => {
       // Field with value should not be invalid
       expect(nameInput).toHaveAttribute("aria-invalid", "false");
     });
+
+    it("should not navigate when email is invalid", async () => {
+      const user = userEvent.setup();
+      renderWithRouter();
+
+      await user.type(screen.getByTestId("form-input-name"), "John Doe");
+      await user.type(screen.getByTestId("form-input-company"), "Acme Inc");
+      await user.type(screen.getByTestId("form-input-email"), "invalid-email");
+      await user.type(screen.getByTestId("form-input-message"), "Hello world");
+
+      const submitButton = screen.getByRole("button", {
+        name: "ENTERPRISE$FORM_SUBMIT",
+      });
+      await user.click(submitButton);
+
+      expect(mockNavigate).not.toHaveBeenCalled();
+      expect(mockTrackEnterpriseLeadFormSubmitted).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("loading state", () => {
+    it("should disable submit button after submission", async () => {
+      const user = userEvent.setup();
+      renderWithRouter();
+
+      await user.type(screen.getByTestId("form-input-name"), "John Doe");
+      await user.type(screen.getByTestId("form-input-company"), "Acme Inc");
+      await user.type(screen.getByTestId("form-input-email"), "john@example.com");
+      await user.type(screen.getByTestId("form-input-message"), "Hello world");
+
+      const submitButton = screen.getByRole("button", {
+        name: "ENTERPRISE$FORM_SUBMIT",
+      });
+      await user.click(submitButton);
+
+      expect(submitButton).toBeDisabled();
+    });
+
+    it("should show submitting text after submission", async () => {
+      const user = userEvent.setup();
+      renderWithRouter();
+
+      await user.type(screen.getByTestId("form-input-name"), "John Doe");
+      await user.type(screen.getByTestId("form-input-company"), "Acme Inc");
+      await user.type(screen.getByTestId("form-input-email"), "john@example.com");
+      await user.type(screen.getByTestId("form-input-message"), "Hello world");
+
+      const submitButton = screen.getByRole("button", {
+        name: "ENTERPRISE$FORM_SUBMIT",
+      });
+      await user.click(submitButton);
+
+      expect(screen.getByText("ENTERPRISE$FORM_SUBMITTING")).toBeInTheDocument();
+    });
+
+    it("should prevent double submission", async () => {
+      const user = userEvent.setup();
+      renderWithRouter();
+
+      await user.type(screen.getByTestId("form-input-name"), "John Doe");
+      await user.type(screen.getByTestId("form-input-company"), "Acme Inc");
+      await user.type(screen.getByTestId("form-input-email"), "john@example.com");
+      await user.type(screen.getByTestId("form-input-message"), "Hello world");
+
+      const submitButton = screen.getByRole("button", {
+        name: "ENTERPRISE$FORM_SUBMIT",
+      });
+
+      // Click multiple times rapidly
+      await user.click(submitButton);
+      await user.click(submitButton);
+      await user.click(submitButton);
+
+      // Should only track once
+      expect(mockTrackEnterpriseLeadFormSubmitted).toHaveBeenCalledTimes(1);
+      expect(mockNavigate).toHaveBeenCalledTimes(1);
+    });
   });
 });

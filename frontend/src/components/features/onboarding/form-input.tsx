@@ -1,3 +1,6 @@
+export const isValidEmail = (email: string): boolean =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
 interface FormInputProps {
   id: string;
   label: string;
@@ -22,7 +25,9 @@ export function FormInput({
   showError = false,
 }: FormInputProps) {
   const inputId = `form-input-${id}`;
-  const hasError = showError && required && !value.trim();
+  const isEmailInvalid =
+    type === "email" && !!value.trim() && !isValidEmail(value.trim());
+  const hasError = showError && ((required && !value.trim()) || isEmailInvalid);
   const inputClassName = `w-full min-h-10 rounded border bg-[#050505] px-3 py-2 text-sm leading-5 text-white placeholder:text-[#8C8C8C] placeholder:leading-5 focus:outline-none transition-colors ${
     hasError
       ? "border-red-500 focus:border-red-500"

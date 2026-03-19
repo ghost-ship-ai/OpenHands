@@ -5,7 +5,7 @@ import { I18nKey } from "#/i18n/declaration";
 import { useTracking } from "#/hooks/use-tracking";
 import { Card } from "#/ui/card";
 import { Text } from "#/ui/typography";
-import { FormInput } from "./form-input";
+import { FormInput, isValidEmail } from "./form-input";
 import OpenHandsLogoWhite from "#/assets/branding/openhands-logo-white.svg?react";
 import CloudIcon from "#/icons/cloud-minimal.svg?react";
 import StackedIcon from "#/icons/stacked.svg?react";
@@ -31,21 +31,26 @@ export function InformationRequestForm({
     message: "",
   });
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setHasAttemptedSubmit(true);
 
-    // Check if all required fields are filled
+    // Check if all required fields are filled and email is valid
     const isValid =
       formData.name.trim() &&
       formData.company.trim() &&
       formData.email.trim() &&
+      isValidEmail(formData.email.trim()) &&
       formData.message.trim();
 
     if (!isValid) {
       return;
     }
+
+    setIsSubmitting(true);
 
     // TODO: Implement actual form submission API call
     // Track form submission in PostHog
@@ -170,10 +175,13 @@ export function InformationRequestForm({
             </button>
             <button
               type="submit"
+              disabled={isSubmitting}
               aria-label={t(I18nKey.ENTERPRISE$FORM_SUBMIT)}
-              className="flex-1 px-6 py-2.5 text-sm rounded bg-white text-black border border-white hover:bg-gray-100 transition-colors"
+              className="flex-1 px-6 py-2.5 text-sm rounded bg-white text-black border border-white hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {t(I18nKey.ENTERPRISE$FORM_SUBMIT)}
+              {isSubmitting
+                ? t(I18nKey.ENTERPRISE$FORM_SUBMITTING)
+                : t(I18nKey.ENTERPRISE$FORM_SUBMIT)}
             </button>
           </div>
         </form>
