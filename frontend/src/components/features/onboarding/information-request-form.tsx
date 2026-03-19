@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { I18nKey } from "#/i18n/declaration";
 import { useTracking } from "#/hooks/use-tracking";
+import { useSubmitEnterpriseLead } from "#/hooks/mutation/use-submit-enterprise-lead";
 import { Card } from "#/ui/card";
 import { Text } from "#/ui/typography";
 import { FormInput, isValidEmail } from "./form-input";
@@ -24,6 +25,7 @@ export function InformationRequestForm({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { trackEnterpriseLeadFormSubmitted } = useTracking();
+  const submitEnterpriseLead = useSubmitEnterpriseLead();
   const [formData, setFormData] = useState({
     name: "",
     company: "",
@@ -31,7 +33,8 @@ export function InformationRequestForm({
     message: "",
   });
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const isSubmitting = submitEnterpriseLead.isPending;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,20 +53,36 @@ export function InformationRequestForm({
       return;
     }
 
-    setIsSubmitting(true);
-
-    // TODO: Implement actual form submission API call
-    // Track form submission in PostHog
-    trackEnterpriseLeadFormSubmitted({
+    const submissionData = {
       requestType,
       name: formData.name.trim(),
       company: formData.company.trim(),
       email: formData.email.trim(),
       message: formData.message.trim(),
-    });
+    };
 
-    // Navigate to login page with state to show confirmation modal
-    navigate("/login", { state: { showRequestSubmittedModal: true } });
+    // Submit to backend API
+    submitEnterpriseLead.mutate(submissionData, {
+      onSuccess: () => {
+        // Track form submission in PostHog (alongside API call)
+        trackEnterpriseLeadFormSubmitted(submissionData);
+
+        // Navigate to login page with state to show confirmation modal
+        navigate("/login", { state: { showRequestSubmittedModal: true } });
+      },
+      onError: (error) => {
+        // Log error but still track and navigate on failure
+        // This ensures the user experience is not blocked by API issues
+        // eslint-disable-next-line no-console
+        console.error("Failed to submit enterprise lead form:", error);
+
+        // Still track in PostHog as a fallback
+        trackEnterpriseLeadFormSubmitted(submissionData);
+
+        // Navigate anyway to show confirmation (graceful degradation)
+        navigate("/login", { state: { showRequestSubmittedModal: true } });
+      },
+    });
   };
 
   const isSaas = requestType === "saas";
