@@ -208,7 +208,7 @@ describe("InformationRequestForm", () => {
       expect(mockTrackEnterpriseLeadFormSubmitted).not.toHaveBeenCalled();
     });
 
-    it("should navigate to homepage with modal state when form is submitted with all fields filled", async () => {
+    it("should navigate to login page with modal state when form is submitted with all fields filled", async () => {
       const user = userEvent.setup();
       renderWithRouter();
 
@@ -220,7 +220,7 @@ describe("InformationRequestForm", () => {
       const submitButton = screen.getByRole("button", { name: "ENTERPRISE$FORM_SUBMIT" });
       await user.click(submitButton);
 
-      expect(mockNavigate).toHaveBeenCalledWith("/", {
+      expect(mockNavigate).toHaveBeenCalledWith("/login", {
         state: { showRequestSubmittedModal: true },
       });
     });

@@ -62,8 +62,8 @@ export function InformationRequestForm({
       message: formData.message.trim(),
     });
 
-    // Navigate to homepage with state to show confirmation modal
-    navigate("/", { state: { showRequestSubmittedModal: true } });
+    // Navigate to login page with state to show confirmation modal
+    navigate("/login", { state: { showRequestSubmittedModal: true } });
   };
 
   const isSaas = requestType === "saas";

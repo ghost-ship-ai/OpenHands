@@ -1,5 +1,5 @@
 import React from "react";
-import { PrefetchPageLinks, useLocation, useNavigate } from "react-router";
+import { PrefetchPageLinks } from "react-router";
 import { HomeHeader } from "#/components/features/home/home-header/home-header";
 import { RepoConnector } from "#/components/features/home/repo-connector";
 import { TaskSuggestions } from "#/components/features/home/tasks/task-suggestions";
@@ -7,22 +7,14 @@ import { GitRepository } from "#/types/git";
 import { NewConversation } from "#/components/features/home/new-conversation/new-conversation";
 import { RecentConversations } from "#/components/features/home/recent-conversations/recent-conversations";
 import { HomepageCTA } from "#/components/features/home/homepage-cta";
-import { RequestSubmittedModal } from "#/components/features/onboarding/request-submitted-modal";
 import { isCTADismissed } from "#/utils/local-storage";
 import { useConfig } from "#/hooks/query/use-config";
 import { ENABLE_PROJ_USER_JOURNEY } from "#/utils/feature-flags";
 
 <PrefetchPageLinks page="/conversations/:conversationId" />;
 
-interface LocationState {
-  showRequestSubmittedModal?: boolean;
-}
-
 function HomeScreen() {
   const { data: config } = useConfig();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const locationState = location.state as LocationState | null;
 
   const [selectedRepo, setSelectedRepo] = React.useState<GitRepository | null>(
     null,
@@ -32,17 +24,7 @@ function HomeScreen() {
     () => !isCTADismissed("homepage"),
   );
 
-  const [showRequestModal, setShowRequestModal] = React.useState(
-    () => locationState?.showRequestSubmittedModal ?? false,
-  );
-
   const isSaasMode = config?.app_mode === "saas";
-
-  const handleModalClose = () => {
-    setShowRequestModal(false);
-    // Clear the state from location to prevent modal showing on refresh
-    navigate(location.pathname, { replace: true, state: {} });
-  };
 
   return (
     <div
@@ -76,8 +58,6 @@ function HomeScreen() {
           <HomepageCTA setShouldShowCTA={setShouldShowCTA} />
         </div>
       )}
-
-      {showRequestModal && <RequestSubmittedModal onClose={handleModalClose} />}
     </div>
   );
 }
