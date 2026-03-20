@@ -1,10 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import {
-  FormInput,
-  isValidEmail,
-} from "#/components/features/onboarding/form-input";
+import { FormInput } from "#/components/features/onboarding/form-input";
 
 describe("FormInput", () => {
   const defaultProps = {
@@ -193,23 +190,6 @@ describe("FormInput", () => {
 
       const input = screen.getByTestId("form-input-test-input");
       expect(input).not.toHaveClass("border-red-500");
-    });
-  });
-
-  describe("isValidEmail", () => {
-    it("should return true for valid emails", () => {
-      expect(isValidEmail("test@example.com")).toBe(true);
-      expect(isValidEmail("user.name@domain.org")).toBe(true);
-      expect(isValidEmail("user+tag@domain.co.uk")).toBe(true);
-    });
-
-    it("should return false for invalid emails", () => {
-      expect(isValidEmail("")).toBe(false);
-      expect(isValidEmail("a@b")).toBe(false);
-      expect(isValidEmail("invalid")).toBe(false);
-      expect(isValidEmail("@domain.com")).toBe(false);
-      expect(isValidEmail("user@")).toBe(false);
-      expect(isValidEmail("user@.com")).toBe(false);
     });
   });
 });

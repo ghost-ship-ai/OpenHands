@@ -1,7 +1,4 @@
-export const isValidEmail = (email: string): boolean =>
-  /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/.test(
-    email,
-  );
+import { isValidEmail } from "#/utils/input-validation";
 
 interface FormInputProps {
   id: string;
