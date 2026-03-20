@@ -4,7 +4,6 @@ Stores form submissions for various form types (e.g., enterprise lead capture).
 Uses JSON for flexible answer storage to support different form structures.
 """
 
-from datetime import datetime
 from uuid import uuid4
 
 from sqlalchemy import JSON, UUID, Column, DateTime, ForeignKey, Index, String

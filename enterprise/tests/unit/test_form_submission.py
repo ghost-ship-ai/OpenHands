@@ -1,31 +1,20 @@
 """Unit tests for form submission API."""
 
-import sys
-from contextlib import asynccontextmanager
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 from uuid import UUID, uuid4
 
 import pytest
 from fastapi import HTTPException
-
-# Mock the modules that are causing issues
-sys.modules['google'] = MagicMock()
-sys.modules['google.cloud'] = MagicMock()
-sys.modules['google.cloud.sql'] = MagicMock()
-sys.modules['google.cloud.sql.connector'] = MagicMock()
-sys.modules['google.cloud.sql.connector.Connector'] = MagicMock()
-mock_db_module = MagicMock()
-mock_db_module.a_session_maker = MagicMock()
-sys.modules['storage.database'] = mock_db_module
-
-# Now import the modules we need
-from server.routes.form_submission import (  # noqa: E402
+from pydantic import ValidationError
+from server.auth.saas_user_auth import SaasUserAuth
+from server.routes.form_submission import (
     FormSubmissionRequest,
     FormSubmissionResponse,
     _validate_enterprise_lead_answers,
     submit_form,
 )
-from storage.form_submission import FormSubmission  # noqa: E402
+from sqlalchemy import select
+from storage.form_submission import FormSubmission
 
 
 @pytest.fixture
@@ -55,8 +44,6 @@ def mock_request():
 @pytest.fixture
 def mock_authenticated_request():
     """Create a mock authenticated FastAPI request."""
-    from server.auth.saas_user_auth import SaasUserAuth
-
     request = MagicMock()
     mock_user_auth = MagicMock(spec=SaasUserAuth)
     mock_user_auth.user_id = str(uuid4())
@@ -172,102 +159,83 @@ class TestSubmitForm:
 
     @pytest.mark.asyncio
     async def test_submit_enterprise_lead_unauthenticated(
-        self, valid_enterprise_lead_data, mock_request
+        self, valid_enterprise_lead_data, mock_request, async_session_maker
     ):
         """Test submitting enterprise lead form without authentication."""
-        mock_session = MagicMock()
-        mock_session.commit = AsyncMock()
-        mock_session.refresh = AsyncMock()
-
-        # Mock the form submission with expected attributes
-        mock_submission = MagicMock(spec=FormSubmission)
-        mock_submission.id = uuid4()
-        mock_submission.status = 'pending'
-        mock_submission.created_at = MagicMock()
-
-        @asynccontextmanager
-        async def mock_a_session_maker():
-            yield mock_session
-
         submission_request = FormSubmissionRequest(**valid_enterprise_lead_data)
 
-        with patch('server.routes.form_submission.a_session_maker', mock_a_session_maker):
-            with patch('server.routes.form_submission.uuid4', return_value=mock_submission.id):
-                result = await submit_form(mock_request, submission_request)
+        with patch(
+            'server.routes.form_submission.a_session_maker', async_session_maker
+        ):
+            result = await submit_form(mock_request, submission_request)
 
-                # Verify response type
-                assert isinstance(result, FormSubmissionResponse)
-                assert result.id == str(mock_submission.id)
-                assert result.status == 'pending'
+        # Verify response type
+        assert isinstance(result, FormSubmissionResponse)
+        assert result.status == 'pending'
+        assert result.created_at is not None
 
-                # Verify database operations
-                mock_session.add.assert_called_once()
-                mock_session.commit.assert_called_once()
-
-                # Verify the submission data
-                added_submission = mock_session.add.call_args[0][0]
-                assert isinstance(added_submission, FormSubmission)
-                assert added_submission.form_type == 'enterprise_lead'
-                assert added_submission.answers == valid_enterprise_lead_data['answers']
-                assert added_submission.status == 'pending'
-                assert added_submission.user_id is None  # Unauthenticated
+        # Verify the submission was persisted in the database
+        async with async_session_maker() as session:
+            db_result = await session.execute(
+                select(FormSubmission).filter(FormSubmission.id == UUID(result.id))
+            )
+            submission = db_result.scalars().first()
+            assert submission is not None
+            assert submission.form_type == 'enterprise_lead'
+            assert submission.answers == valid_enterprise_lead_data['answers']
+            assert submission.status == 'pending'
+            assert submission.user_id is None  # Unauthenticated
 
     @pytest.mark.asyncio
     async def test_submit_enterprise_lead_authenticated(
-        self, valid_enterprise_lead_data, mock_authenticated_request
+        self,
+        valid_enterprise_lead_data,
+        mock_authenticated_request,
+        async_session_maker,
     ):
         """Test submitting enterprise lead form with authentication."""
-        mock_session = MagicMock()
-        mock_session.commit = AsyncMock()
-        mock_session.refresh = AsyncMock()
-
-        submission_id = uuid4()
-
-        @asynccontextmanager
-        async def mock_a_session_maker():
-            yield mock_session
-
         submission_request = FormSubmissionRequest(**valid_enterprise_lead_data)
         expected_user_id = mock_authenticated_request.state.user_auth.user_id
 
-        with patch('server.routes.form_submission.a_session_maker', mock_a_session_maker):
-            with patch('server.routes.form_submission.uuid4', return_value=submission_id):
-                result = await submit_form(mock_authenticated_request, submission_request)
+        with patch(
+            'server.routes.form_submission.a_session_maker', async_session_maker
+        ):
+            result = await submit_form(mock_authenticated_request, submission_request)
 
-                # Verify response type
-                assert isinstance(result, FormSubmissionResponse)
+        # Verify response type
+        assert isinstance(result, FormSubmissionResponse)
 
-                # Verify the submission data has user_id
-                added_submission = mock_session.add.call_args[0][0]
-                assert added_submission.user_id == UUID(expected_user_id)
+        # Verify the submission was persisted with user_id
+        async with async_session_maker() as session:
+            db_result = await session.execute(
+                select(FormSubmission).filter(FormSubmission.id == UUID(result.id))
+            )
+            submission = db_result.scalars().first()
+            assert submission is not None
+            assert submission.user_id == UUID(expected_user_id)
 
     @pytest.mark.asyncio
-    async def test_submit_invalid_form_type(self, mock_request):
+    async def test_submit_invalid_form_type(self, mock_request, async_session_maker):
         """Test submitting with invalid form type."""
         submission_request = FormSubmissionRequest(
             form_type='invalid_type',
             answers={'key': 'value'},
         )
 
-        with pytest.raises(HTTPException) as excinfo:
-            await submit_form(mock_request, submission_request)
+        with patch(
+            'server.routes.form_submission.a_session_maker', async_session_maker
+        ):
+            with pytest.raises(HTTPException) as excinfo:
+                await submit_form(mock_request, submission_request)
 
         assert excinfo.value.status_code == 400
         assert 'Invalid form_type' in excinfo.value.detail
 
     @pytest.mark.asyncio
-    async def test_submit_self_hosted_request_type(self, mock_request):
+    async def test_submit_self_hosted_request_type(
+        self, mock_request, async_session_maker
+    ):
         """Test submitting with self-hosted request type."""
-        mock_session = MagicMock()
-        mock_session.commit = AsyncMock()
-        mock_session.refresh = AsyncMock()
-
-        submission_id = uuid4()
-
-        @asynccontextmanager
-        async def mock_a_session_maker():
-            yield mock_session
-
         submission_request = FormSubmissionRequest(
             form_type='enterprise_lead',
             answers={
@@ -279,13 +247,21 @@ class TestSubmitForm:
             },
         )
 
-        with patch('server.routes.form_submission.a_session_maker', mock_a_session_maker):
-            with patch('server.routes.form_submission.uuid4', return_value=submission_id):
-                result = await submit_form(mock_request, submission_request)
+        with patch(
+            'server.routes.form_submission.a_session_maker', async_session_maker
+        ):
+            result = await submit_form(mock_request, submission_request)
 
-                assert isinstance(result, FormSubmissionResponse)
-                added_submission = mock_session.add.call_args[0][0]
-                assert added_submission.answers['request_type'] == 'self-hosted'
+        assert isinstance(result, FormSubmissionResponse)
+
+        # Verify the submission was persisted with correct request_type
+        async with async_session_maker() as session:
+            db_result = await session.execute(
+                select(FormSubmission).filter(FormSubmission.id == UUID(result.id))
+            )
+            submission = db_result.scalars().first()
+            assert submission is not None
+            assert submission.answers['request_type'] == 'self-hosted'
 
 
 class TestFormSubmissionRequest:
@@ -299,8 +275,6 @@ class TestFormSubmissionRequest:
 
     def test_form_type_max_length(self):
         """Test form_type max length validation."""
-        from pydantic import ValidationError
-
         with pytest.raises(ValidationError):
             FormSubmissionRequest(
                 form_type='a' * 51,  # Over 50 chars
