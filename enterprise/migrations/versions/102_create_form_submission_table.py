@@ -3,6 +3,7 @@
 Revision ID: 102
 Revises: 101
 Create Date: 2025-03-19 00:00:00.000000
+
 """
 
 from typing import Sequence, Union
@@ -26,19 +27,35 @@ def upgrade() -> None:
     """
     op.create_table(
         'form_submission',
-        sa.Column('id', sa.UUID(), nullable=False),
+        sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('form_type', sa.String(50), nullable=False),
         sa.Column('answers', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-        sa.Column('status', sa.String(20), nullable=False, server_default='pending'),
-        sa.Column('user_id', sa.UUID(), nullable=True),
         sa.Column(
-            'created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')
+            'status',
+            sa.String(20),
+            nullable=False,
+            server_default=sa.text("'pending'"),
+        ),
+        sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column(
+            'created_at',
+            sa.DateTime(),
+            nullable=False,
+            server_default=sa.text('CURRENT_TIMESTAMP'),
         ),
         sa.Column(
-            'updated_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')
+            'updated_at',
+            sa.DateTime(),
+            nullable=False,
+            server_default=sa.text('CURRENT_TIMESTAMP'),
         ),
         sa.PrimaryKeyConstraint('id'),
-        sa.ForeignKeyConstraint(['user_id'], ['user.id'], ondelete='SET NULL'),
+        sa.ForeignKeyConstraint(
+            ['user_id'],
+            ['user.id'],
+            name='form_submission_user_fkey',
+            ondelete='SET NULL',
+        ),
     )
     op.create_index(
         op.f('ix_form_submission_form_type'),

@@ -17,7 +17,7 @@ from storage.form_submission import FormSubmission
 from openhands.core.logger import openhands_logger as logger
 from openhands.server.user_auth.user_auth import UserAuth
 
-router = APIRouter(prefix='/api/v1/forms', tags=['forms'])
+router = APIRouter(prefix='/api/forms', tags=['forms'])
 
 
 class FormSubmissionRequest(BaseModel):
