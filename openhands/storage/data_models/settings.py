@@ -256,7 +256,7 @@ class Settings(BaseModel):
         )
         if normalized == self.agent_settings:
             return False
-        self.agent_settings = normalized
+        object.__setattr__(self, 'agent_settings', normalized)
         return True
 
     @property
