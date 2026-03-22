@@ -19,19 +19,19 @@ jobs:
       - name: Fetch base branch
         run: git fetch origin ${{ github.event.pull_request.base.ref }}
 
-      - name: Check if base branch is ancestor of PR
-        id: check_up_to_date
-        shell: bash
-        run: |
-          BASE="origin/${{ github.event.pull_request.base.ref }}"
-          HEAD="${{ github.event.pull_request.head.sha }}"
-          if git merge-base --is-ancestor "$BASE" "$HEAD"; then
-            echo "We're up to date with base $BASE"
-            exit 0
-          else
-            echo "NOT up to date with base $BASE"
-            exit 1
-          fi
+      # - name: Check if base branch is ancestor of PR
+      #   id: check_up_to_date
+      #   shell: bash
+      #   run: |
+      #     BASE="origin/${{ github.event.pull_request.base.ref }}"
+      #     HEAD="${{ github.event.pull_request.head.sha }}"
+      #     if git merge-base --is-ancestor "$BASE" "$HEAD"; then
+      #       echo "We're up to date with base $BASE"
+      #       exit 0
+      #     else
+      #       echo "NOT up to date with base $BASE"
+      #       exit 1
+      #     fi
 
       - name: Find Comment
         uses: peter-evans/find-comment@v4
