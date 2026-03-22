@@ -35,10 +35,12 @@ def test_get_kwargs_from_user_settings_backfills_agent_settings_from_legacy_fiel
     assert kwargs['agent_settings']['llm.model'] == 'anthropic/claude-sonnet-4-5-20250929'
     assert kwargs['agent_settings']['llm.base_url'] == 'https://api.example.com'
     assert kwargs['agent_settings']['max_iterations'] == 42
-    assert kwargs['agent_settings']['verification.confirmation_mode'] is True
-    assert kwargs['agent_settings']['verification.security_analyzer'] == 'llm'
-    assert kwargs['agent_settings']['condenser.enabled'] is False
-    assert kwargs['agent_settings']['condenser.max_size'] == 128
+    assert kwargs['agent_settings'] == {
+        'schema_version': 1,
+        'llm.model': 'anthropic/claude-sonnet-4-5-20250929',
+        'llm.base_url': 'https://api.example.com',
+        'max_iterations': 42,
+    }
 
 
 @pytest.fixture

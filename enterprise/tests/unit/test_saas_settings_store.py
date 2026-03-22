@@ -26,6 +26,30 @@ def mock_config():
     return config
 
 
+
+def test_member_scoped_agent_settings_filters_effective_settings(mock_config):
+    store = SaasSettingsStore('test-user-id', mock_config)
+    effective_settings = Settings(
+        agent='CodeActAgent',
+        llm_model='anthropic/claude-sonnet-4-5-20250929',
+        llm_base_url='https://api.example.com',
+        max_iterations=42,
+        confirmation_mode=True,
+        security_analyzer='llm',
+        enable_default_condenser=False,
+        condenser_max_size=128,
+    )
+
+    assert store._member_scoped_agent_settings(
+        effective_settings.normalized_agent_settings(strip_secret_values=True)
+    ) == {
+        'schema_version': 1,
+        'llm.model': 'anthropic/claude-sonnet-4-5-20250929',
+        'llm.base_url': 'https://api.example.com',
+        'max_iterations': 42,
+    }
+
+
 @pytest.fixture
 def settings_store(async_session_maker, mock_config):
     store = SaasSettingsStore('5594c7b6-f959-4b81-92e9-b09c206f5081', mock_config)

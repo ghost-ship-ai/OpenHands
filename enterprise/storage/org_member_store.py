@@ -18,6 +18,14 @@ from storage.user_settings import UserSettings
 from openhands.storage.data_models.settings import Settings
 
 
+_MEMBER_SCOPED_AGENT_SETTINGS_KEYS = {
+    'schema_version',
+    'llm.model',
+    'llm.base_url',
+    'max_iterations',
+}
+
+
 class OrgMemberStore:
     """Store for managing organization-member relationships."""
 
@@ -176,9 +184,13 @@ class OrgMemberStore:
                 enable_default_condenser=user_settings.enable_default_condenser,
                 condenser_max_size=user_settings.condenser_max_size,
             )
-            kwargs['agent_settings'] = legacy_settings.normalized_agent_settings(
-                strip_secret_values=True
-            )
+            kwargs['agent_settings'] = {
+                key: value
+                for key, value in legacy_settings.normalized_agent_settings(
+                    strip_secret_values=True
+                ).items()
+                if key in _MEMBER_SCOPED_AGENT_SETTINGS_KEYS
+            }
         return kwargs
 
     @staticmethod

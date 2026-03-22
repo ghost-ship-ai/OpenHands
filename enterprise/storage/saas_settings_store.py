@@ -29,6 +29,14 @@ from openhands.storage.settings.settings_store import SettingsStore
 from openhands.utils.llm import is_openhands_model
 
 
+_MEMBER_SCOPED_AGENT_SETTINGS_KEYS = {
+    'schema_version',
+    'llm.model',
+    'llm.base_url',
+    'max_iterations',
+}
+
+
 @dataclass
 class SaasSettingsStore(SettingsStore):
     user_id: str
@@ -68,6 +76,14 @@ class SaasSettingsStore(SettingsStore):
                     )
                 )
                 return result.scalars().first()
+
+    @staticmethod
+    def _member_scoped_agent_settings(agent_settings: dict) -> dict:
+        return {
+            key: value
+            for key, value in agent_settings.items()
+            if key in _MEMBER_SCOPED_AGENT_SETTINGS_KEYS
+        }
 
     async def _persist_agent_settings_async(
         self, org_id: uuid.UUID, agent_settings: dict
@@ -139,8 +155,8 @@ class SaasSettingsStore(SettingsStore):
             kwargs.pop('sandbox_grouping_strategy', None)
 
         settings = Settings(**kwargs)
-        persisted_agent_settings = settings.normalized_agent_settings(
-            strip_secret_values=True
+        persisted_agent_settings = self._member_scoped_agent_settings(
+            settings.normalized_agent_settings(strip_secret_values=True)
         )
         if persisted_agent_settings != (org_member.agent_settings or {}):
             await self._persist_agent_settings_async(org_id, persisted_agent_settings)
@@ -207,8 +223,8 @@ class SaasSettingsStore(SettingsStore):
                 )
 
             kwargs = item.model_dump(context={'expose_secrets': True})
-            kwargs['agent_settings'] = item.normalized_agent_settings(
-                strip_secret_values=True
+            kwargs['agent_settings'] = self._member_scoped_agent_settings(
+                item.normalized_agent_settings(strip_secret_values=True)
             )
             for model in (user, org, org_member):
                 for key, value in kwargs.items():
