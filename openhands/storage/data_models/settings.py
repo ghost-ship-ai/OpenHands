@@ -218,7 +218,7 @@ class Settings(BaseModel):
         _, secret_keys = _sdk_schema_field_metadata()
         serialized: dict[str, Any] = {}
         for key, value in values.items():
-            if key in secret_keys and value:
+            if key in secret_keys and value and value != '<hidden>':
                 serialized[key] = str(SecretStr(str(value)))
             else:
                 serialized[key] = value

@@ -574,9 +574,7 @@ class TestExposeSecretsIntegration:
 
         assert response.status_code == 200
         body = response.json()
-        # Default serialization includes the raw value; redaction happens
-        # only via the GET /api/settings route's _extract_agent_settings.
-        assert body['agent_settings']['llm.api_key'] == 'sk-should-be-masked'
+        assert body['agent_settings']['llm.api_key'] == '**********'
 
 
 class TestSandboxSecretsIntegration:
