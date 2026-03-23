@@ -12,8 +12,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "102"
-down_revision: Union[str, None] = "101"
+revision: str = '102'
+down_revision: Union[str, None] = '101'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -23,15 +23,15 @@ _EMPTY_JSON = sa.text("'{}'::json")
 
 def upgrade() -> None:
     op.add_column(
-        "user_settings",
+        'user_settings',
         sa.Column(
-            "agent_settings", sa.JSON(), nullable=False, server_default=_EMPTY_JSON
+            'agent_settings', sa.JSON(), nullable=False, server_default=_EMPTY_JSON
         ),
     )
     op.add_column(
-        "org_member",
+        'org_member',
         sa.Column(
-            "agent_settings", sa.JSON(), nullable=False, server_default=_EMPTY_JSON
+            'agent_settings', sa.JSON(), nullable=False, server_default=_EMPTY_JSON
         ),
     )
 
@@ -71,45 +71,44 @@ def upgrade() -> None:
         )
     )
 
-    op.alter_column("user_settings", "agent_settings", server_default=None)
-    op.alter_column("org_member", "agent_settings", server_default=None)
-
-    op.drop_column("user_settings", "agent")
-    op.drop_column("user_settings", "max_iterations")
-    op.drop_column("user_settings", "security_analyzer")
-    op.drop_column("user_settings", "confirmation_mode")
-    op.drop_column("user_settings", "llm_model")
-    op.drop_column("user_settings", "llm_base_url")
-    op.drop_column("user_settings", "enable_default_condenser")
-    op.drop_column("user_settings", "condenser_max_size")
+    op.alter_column('user_settings', 'agent_settings', server_default=None)
+    op.alter_column('org_member', 'agent_settings', server_default=None)
+    op.drop_column('user_settings', 'agent')
+    op.drop_column('user_settings', 'max_iterations')
+    op.drop_column('user_settings', 'security_analyzer')
+    op.drop_column('user_settings', 'confirmation_mode')
+    op.drop_column('user_settings', 'llm_model')
+    op.drop_column('user_settings', 'llm_base_url')
+    op.drop_column('user_settings', 'enable_default_condenser')
+    op.drop_column('user_settings', 'condenser_max_size')
 
 
 def downgrade() -> None:
-    op.add_column("user_settings", sa.Column("agent", sa.String(), nullable=True))
+    op.add_column('user_settings', sa.Column('agent', sa.String(), nullable=True))
     op.add_column(
-        "user_settings", sa.Column("max_iterations", sa.Integer(), nullable=True)
+        'user_settings', sa.Column('max_iterations', sa.Integer(), nullable=True)
     )
     op.add_column(
-        "user_settings", sa.Column("security_analyzer", sa.String(), nullable=True)
+        'user_settings', sa.Column('security_analyzer', sa.String(), nullable=True)
     )
     op.add_column(
-        "user_settings", sa.Column("confirmation_mode", sa.Boolean(), nullable=True)
+        'user_settings', sa.Column('confirmation_mode', sa.Boolean(), nullable=True)
     )
-    op.add_column("user_settings", sa.Column("llm_model", sa.String(), nullable=True))
+    op.add_column('user_settings', sa.Column('llm_model', sa.String(), nullable=True))
     op.add_column(
-        "user_settings", sa.Column("llm_base_url", sa.String(), nullable=True)
+        'user_settings', sa.Column('llm_base_url', sa.String(), nullable=True)
     )
     op.add_column(
-        "user_settings",
+        'user_settings',
         sa.Column(
-            "enable_default_condenser",
+            'enable_default_condenser',
             sa.Boolean(),
             nullable=False,
             server_default=sa.true(),
         ),
     )
     op.add_column(
-        "user_settings", sa.Column("condenser_max_size", sa.Integer(), nullable=True)
+        'user_settings', sa.Column('condenser_max_size', sa.Integer(), nullable=True)
     )
 
     op.execute(
@@ -139,5 +138,5 @@ def downgrade() -> None:
         )
     )
 
-    op.drop_column("org_member", "agent_settings")
-    op.drop_column("user_settings", "agent_settings")
+    op.drop_column('org_member', 'agent_settings')
+    op.drop_column('user_settings', 'agent_settings')
