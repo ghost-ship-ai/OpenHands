@@ -492,12 +492,12 @@ async def test_search_pagination(bash_service):
 
 @pytest.mark.asyncio
 async def test_terminal_does_not_expose_session_api_key(bash_service, monkeypatch):
-    """Verify SESSION_API_KEY is not accessible to bash commands executed by the terminal.
+    """Verify SESSION_API_KEY is not accessible to bash commands.
 
-    This is a security test: SESSION_API_KEY grants access to user secrets via the
-    SaaS API. If an LLM-driven agent could read this env var via terminal commands,
-    it could exfiltrate all user secrets. The sanitized_env() function must strip
-    this variable before passing the environment to subprocesses.
+    This is a security test: SESSION_API_KEY grants access to user secrets via
+    the SaaS API. If an LLM-driven agent could read this env var via terminal
+    commands, it could exfiltrate all user secrets. The sanitized_env() function
+    must strip this variable before passing the environment to subprocesses.
     """
     # Simulate the automation service injecting SESSION_API_KEY into os.environ
     secret_value = "super-secret-session-key-12345"
@@ -517,7 +517,8 @@ async def test_terminal_does_not_expose_session_api_key(bash_service, monkeypatc
     # Collect the output
     assert len(collector.outputs) >= 1
     combined_stdout = "".join(
-        output.stdout or "" for output in sorted(collector.outputs, key=lambda x: x.order)
+        output.stdout or ""
+        for output in sorted(collector.outputs, key=lambda x: x.order)
     )
 
     # The secret value should NOT appear in the output
@@ -525,9 +526,10 @@ async def test_terminal_does_not_expose_session_api_key(bash_service, monkeypatc
         f"SESSION_API_KEY was exposed to terminal command! Output: {combined_stdout}"
     )
     # The env var should be empty/unset
-    assert "SESSION_API_KEY=$" in combined_stdout or "SESSION_API_KEY=\n" in combined_stdout, (
-        f"SESSION_API_KEY should be unset in subprocess. Output: {combined_stdout}"
-    )
+    assert (
+        "SESSION_API_KEY=$" in combined_stdout
+        or "SESSION_API_KEY=\n" in combined_stdout
+    ), f"SESSION_API_KEY should be unset in subprocess. Output: {combined_stdout}"
 
 
 @pytest.mark.asyncio
@@ -556,7 +558,8 @@ async def test_terminal_does_not_expose_session_api_key_via_env_command(
 
     assert len(collector.outputs) >= 1
     combined_stdout = "".join(
-        output.stdout or "" for output in sorted(collector.outputs, key=lambda x: x.order)
+        output.stdout or ""
+        for output in sorted(collector.outputs, key=lambda x: x.order)
     )
 
     # SESSION_API_KEY should not appear at all
