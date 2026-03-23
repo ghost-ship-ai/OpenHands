@@ -245,10 +245,9 @@ class TestGetCurrentUserExposeSecrets:
 
         # Returns UserInfo directly (FastAPI will serialize with masking)
         assert isinstance(result, UserInfo)
-        assert result.llm_api_key is not None
-        # Default serialization does NOT expose secrets in agent_settings
         dumped = result.model_dump(mode='json')
-        assert dumped['agent_settings']['llm.api_key'] == 'sk-test-key-123'
+        assert dumped['agent_settings']['llm.api_key'] != 'sk-test-key-123'
+        assert dumped['agent_settings']['llm.api_key'] == '**********'
 
 
 # ---------------------------------------------------------------------------

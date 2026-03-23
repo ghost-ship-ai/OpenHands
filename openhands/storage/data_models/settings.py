@@ -214,7 +214,15 @@ class Settings(BaseModel):
         context = info.context
         if context and context.get('expose_secrets', False):
             return values
-        return {k: v for k, v in values.items()}
+
+        _, secret_keys = _sdk_schema_field_metadata()
+        serialized: dict[str, Any] = {}
+        for key, value in values.items():
+            if key in secret_keys and value:
+                serialized[key] = str(SecretStr(str(value)))
+            else:
+                serialized[key] = value
+        return serialized
 
     @model_validator(mode='before')
     @classmethod
