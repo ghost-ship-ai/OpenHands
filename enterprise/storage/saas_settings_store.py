@@ -212,7 +212,7 @@ class SaasSettingsStore(SettingsStore):
             llm_base_url = item.get_agent_setting('llm.base_url')
 
             # Check if we need to generate an LLM key.
-            if llm_base_url == LITE_LLM_API_URL:
+            if not llm_base_url or llm_base_url == LITE_LLM_API_URL:
                 await self._ensure_api_key(
                     item, str(org_id), openhands_type=is_openhands_model(llm_model)
                 )
