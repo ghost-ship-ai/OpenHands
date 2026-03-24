@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from pydantic import SecretStr
 from server.constants import DEFAULT_BILLING_MARGIN
 from sqlalchemy import JSON, Boolean, Column, DateTime, Float, Identity, Integer, String
 from storage.base import Base
+from storage.encrypt_utils import decrypt_legacy_value, encrypt_legacy_value
 
 
 class UserSettings(Base):  # type: ignore
@@ -35,6 +37,24 @@ class UserSettings(Base):  # type: ignore
     git_user_email = Column(String, nullable=True)
     v1_enabled = Column(Boolean, nullable=True)
     agent_settings = Column(JSON, nullable=False, default=dict)
+
+    @property
+    def llm_api_key_for_byor_secret(self) -> SecretStr | None:
+        raw = self.llm_api_key_for_byor
+        if not raw:
+            return None
+        try:
+            return SecretStr(decrypt_legacy_value(raw))
+        except Exception:
+            return SecretStr(raw)
+
+    @llm_api_key_for_byor_secret.setter
+    def llm_api_key_for_byor_secret(self, value: str | SecretStr | None) -> None:
+        if value is None:
+            self.llm_api_key_for_byor = None
+            return
+        raw = value.get_secret_value() if isinstance(value, SecretStr) else value
+        self.llm_api_key_for_byor = encrypt_legacy_value(raw)
 
     already_migrated = Column(
         Boolean, nullable=True, default=False

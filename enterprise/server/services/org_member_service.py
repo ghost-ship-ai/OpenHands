@@ -18,7 +18,6 @@ from server.routes.org_models import (
 )
 from sqlalchemy import select
 from storage.database import a_session_maker
-from storage.encrypt_utils import decrypt_legacy_value
 from storage.lite_llm_manager import LiteLlmManager
 from storage.org_member_store import OrgMemberStore
 from storage.role_store import RoleStore
@@ -63,7 +62,6 @@ class OrgMemberService:
         user = await UserStore.get_user_by_id(str(user_id))
         email = user.email if user and user.email else ''
 
-        llm_api_key_for_byor = None
         async with a_session_maker() as session:
             result = await session.execute(
                 select(UserSettings).filter(
@@ -71,16 +69,14 @@ class OrgMemberService:
                 )
             )
             user_settings = result.scalars().first()
-        if user_settings and user_settings.llm_api_key_for_byor:
-            try:
-                llm_api_key_for_byor = decrypt_legacy_value(
-                    user_settings.llm_api_key_for_byor
-                )
-            except Exception:
-                llm_api_key_for_byor = user_settings.llm_api_key_for_byor
 
         return MeResponse.from_org_member(
-            org_member, role, email, llm_api_key_for_byor=llm_api_key_for_byor
+            org_member,
+            role,
+            email,
+            llm_api_key_for_byor=(
+                user_settings.llm_api_key_for_byor_secret if user_settings else None
+            ),
         )
 
     @staticmethod

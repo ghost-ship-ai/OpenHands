@@ -120,7 +120,6 @@ class SaasSettingsStore(SettingsStore):
         member_agent_settings = OrgMemberStore.get_agent_settings_from_org_member(
             org_member
         )
-        user_settings = await self._get_user_settings_by_keycloak_id_async(self.user_id)
 
         kwargs = {
             **{
@@ -140,10 +139,6 @@ class SaasSettingsStore(SettingsStore):
             },
         }
         kwargs['llm_api_key'] = org_member.llm_api_key
-        if user_settings and user_settings.llm_api_key_for_byor:
-            byor_kwargs = {'llm_api_key_for_byor': user_settings.llm_api_key_for_byor}
-            self._decrypt_kwargs(byor_kwargs)
-            kwargs['llm_api_key_for_byor'] = byor_kwargs['llm_api_key_for_byor']
         effective_member_agent_settings = {
             **org_agent_settings,
             **member_agent_settings,

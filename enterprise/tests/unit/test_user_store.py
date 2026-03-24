@@ -729,6 +729,35 @@ def test_has_custom_settings_empty_model():
     assert result is False
 
 
+def test_user_settings_byor_secret_property_encrypts_round_trip():
+    from storage.user_settings import UserSettings
+
+    user_settings = UserSettings(keycloak_user_id='test')
+
+    user_settings.llm_api_key_for_byor_secret = SecretStr('sk-byor-secret')
+
+    assert user_settings.llm_api_key_for_byor != 'sk-byor-secret'
+    assert user_settings.llm_api_key_for_byor_secret is not None
+    assert (
+        user_settings.llm_api_key_for_byor_secret.get_secret_value() == 'sk-byor-secret'
+    )
+
+
+def test_user_settings_byor_secret_property_accepts_plaintext_legacy_rows():
+    from storage.user_settings import UserSettings
+
+    user_settings = UserSettings(
+        keycloak_user_id='test',
+        llm_api_key_for_byor='sk-legacy-plaintext',
+    )
+
+    assert user_settings.llm_api_key_for_byor_secret is not None
+    assert (
+        user_settings.llm_api_key_for_byor_secret.get_secret_value()
+        == 'sk-legacy-plaintext'
+    )
+
+
 # --- Tests for _create_user_settings_from_entities ---
 
 

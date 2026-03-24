@@ -8,7 +8,6 @@ from sqlalchemy import select
 from storage.api_key import ApiKey
 from storage.api_key_store import ApiKeyStore
 from storage.database import a_session_maker
-from storage.encrypt_utils import decrypt_legacy_value, encrypt_legacy_value
 from storage.lite_llm_manager import LiteLlmManager
 from storage.org_service import OrgService
 from storage.user_settings import UserSettings
@@ -28,13 +27,8 @@ async def get_byor_key_from_db(user_id: str) -> str | None:
         )
         user_settings = result.scalars().first()
 
-    if not user_settings or not user_settings.llm_api_key_for_byor:
-        return None
-
-    try:
-        return decrypt_legacy_value(user_settings.llm_api_key_for_byor)
-    except Exception:
-        return user_settings.llm_api_key_for_byor
+    byor_key = user_settings.llm_api_key_for_byor_secret if user_settings else None
+    return byor_key.get_secret_value() if byor_key else None
 
 
 async def store_byor_key_in_db(user_id: str, key: str) -> None:
@@ -48,7 +42,7 @@ async def store_byor_key_in_db(user_id: str, key: str) -> None:
             user_settings = UserSettings(keycloak_user_id=user_id)
             session.add(user_settings)
 
-        user_settings.llm_api_key_for_byor = encrypt_legacy_value(key)
+        user_settings.llm_api_key_for_byor_secret = key
         await session.commit()
 
 
