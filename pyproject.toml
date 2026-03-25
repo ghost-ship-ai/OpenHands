@@ -104,6 +104,7 @@ dependencies = [
   "uvicorn",
   "whatthepatch>=1.0.6",
   "zope-interface==7.2",
+  "asgi-correlation-id (>=4.3.4,<5.0.0)",
 ]
 
 optional-dependencies.third_party_runtimes = [

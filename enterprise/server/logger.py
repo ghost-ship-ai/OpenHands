@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import TextIO
 
+from asgi_correlation_id import CorrelationIdFilter
 from pythonjsonlogger.json import JsonFormatter
 
 from openhands.core.logger import openhands_logger
@@ -78,9 +79,11 @@ def setup_json_logger(
 
     handler = logging.StreamHandler(_out)
     handler.setLevel(level)
+    handler.addFilter(CorrelationIdFilter(uuid_length=32, default_value='-'))
 
     formatter = JsonFormatter(
-        '%(message)s%(levelname)s%(module)s%(funcName)s%(lineno)d',
+        '{correlation_id}{message}{levelname}{module}{funcName}{lineno}',
+        style='{',
         rename_fields={'levelname': 'severity'},
         json_serializer=custom_json_serializer,
         # Use 'ts' for consistency with LOG_JSON_FOR_CONSOLE mode (skip when console mode to avoid duplicates)

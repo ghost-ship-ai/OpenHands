@@ -18,6 +18,7 @@ from types import TracebackType
 from typing import Any, Literal, Mapping, MutableMapping, TextIO
 
 import litellm
+from asgi_correlation_id import CorrelationIdFilter
 from pythonjsonlogger.json import JsonFormatter
 from termcolor import colored
 
@@ -331,6 +332,7 @@ def get_file_handler(
     )
     file_handler.setLevel(log_level)
     if LOG_JSON:
+        file_handler.addFilter(CorrelationIdFilter(uuid_length=32, default_value='-'))
         file_handler.setFormatter(json_formatter())
     else:
         file_handler.setFormatter(file_formatter)
@@ -339,7 +341,7 @@ def get_file_handler(
 
 def json_formatter() -> JsonFormatter:
     return JsonFormatter(
-        '{message}{levelname}',
+        '{correlation_id}{message}{levelname}',
         style='{',
         rename_fields={'levelname': LOG_JSON_LEVEL_KEY},
         timestamp=True,
@@ -353,6 +355,7 @@ def json_log_handler(
     """Configure logger instance for structured logging as json lines."""
     handler = logging.StreamHandler(_out)
     handler.setLevel(level)
+    handler.addFilter(CorrelationIdFilter(uuid_length=32, default_value='-'))
     handler.setFormatter(json_formatter())
     return handler
 
