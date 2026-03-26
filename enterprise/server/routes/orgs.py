@@ -31,6 +31,7 @@ from server.routes.org_models import (
     OrgPage,
     OrgResponse,
     OrgUpdate,
+    OrgUsageDashboardResponse,
     OrphanedUserError,
     RoleNotFoundError,
 )
@@ -43,9 +44,14 @@ from server.services.org_llm_settings_service import (
     OrgLLMSettingsServiceInjector,
 )
 from server.services.org_member_service import OrgMemberService
+from server.services.org_usage_service import (
+    OrgUsageService,
+    OrgUsageServiceInjector,
+)
 from storage.org_service import OrgService
 from storage.user_store import UserStore
 
+from openhands.app_server.errors import AuthError
 from openhands.core.logger import openhands_logger as logger
 from openhands.server.user_auth import get_user_id
 
@@ -58,6 +64,8 @@ org_llm_settings_service_dependency = Depends(_org_llm_settings_injector.depends
 # Create injector instance and dependency at module level
 _org_app_settings_injector = OrgAppSettingsServiceInjector()
 org_app_settings_service_dependency = Depends(_org_app_settings_injector.depends)
+_org_usage_injector = OrgUsageServiceInjector()
+org_usage_service_dependency = Depends(_org_usage_injector.depends)
 
 
 @org_router.get('', response_model=OrgPage)
@@ -406,6 +414,40 @@ async def update_org_app_settings(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail='An unexpected error occurred',
+        )
+
+
+@org_router.get('/{org_id}/usage', response_model=OrgUsageDashboardResponse)
+async def get_org_usage_dashboard(
+    org_id: UUID,
+    service: OrgUsageService = org_usage_service_dependency,
+) -> OrgUsageDashboardResponse:
+    """Get usage dashboard metrics for an organization."""
+    try:
+        return await service.get_org_usage(org_id)
+    except AuthError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+        )
+    except OrgNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+    except OrgAuthorizationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(e),
+        )
+    except Exception as e:
+        logger.exception(
+            'Unexpected error retrieving organization usage dashboard',
+            extra={'org_id': str(org_id), 'error': str(e)},
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='Failed to retrieve usage dashboard',
         )
 
 

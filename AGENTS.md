@@ -102,6 +102,8 @@ Frontend:
   - Query hooks should follow the pattern use[Resource] (e.g., `useConversationSkills`)
   - Mutation hooks should follow the pattern use[Action] (e.g., `useDeleteConversation`)
   - Architecture rule: UI components → TanStack Query hooks → Data Access Layer (`frontend/src/api`) → API endpoints
+- SaaS usage dashboard settings live at `/settings/usage`; frontend access should be gated with `canAccessUsageDashboard(...)` / `createUsageDashboardGuard(...)` so personal workspaces are always allowed and org workspaces are limited to admin/owner roles.
+
 
 VSCode Extension:
 - Located in the `openhands/integrations/vscode` directory

@@ -47,6 +47,7 @@ vi.mock("react-i18next", async () => {
           SETTINGS$NAV_MCP: "MCP",
           SETTINGS$NAV_USER: "User",
           SETTINGS$NAV_BILLING: "Billing",
+          SETTINGS$NAV_USAGE: "Usage",
           SETTINGS$TITLE: "Settings",
           COMMON$LANGUAGE_MODEL_LLM: "LLM",
         };
@@ -109,6 +110,10 @@ describe("Settings Screen", () => {
         {
           Component: () => <div data-testid="billing-settings-screen" />,
           path: "/settings/billing",
+        },
+        {
+          Component: () => <div data-testid="usage-settings-screen" />,
+          path: "/settings/usage",
         },
         {
           Component: () => <div data-testid="api-keys-settings-screen" />,
@@ -584,6 +589,47 @@ describe("Settings Screen", () => {
       expect(response.status).toBe(302);
       expect(response.headers.get("Location")).toBe("/settings/user");
     });
+
+    it("should redirect away from /settings/usage for team members", async () => {
+      mockQueryClient.setQueryData(["web-client-config"], { app_mode: "saas" });
+      mockQueryClient.setQueryData(["organizations"], {
+        items: [MOCK_TEAM_ORG_ACME],
+        currentOrgId: MOCK_TEAM_ORG_ACME.id,
+      });
+      useSelectedOrganizationStore.setState({ organizationId: "2" });
+
+      vi.spyOn(organizationService, "getMe").mockResolvedValue(
+        createMockUser({ role: "member", org_id: "2" }),
+      );
+
+      const request = new Request("http://localhost/settings/usage");
+      // @ts-expect-error - test only needs request and params, not full loader args
+      const result = await clientLoader({ request, params: {} });
+
+      expect(result).toBeInstanceOf(Response);
+      expect((result as Response).status).toBe(302);
+      expect((result as Response).headers.get("Location")).toBe("/settings/user");
+    });
+
+    it("should allow /settings/usage for personal workspace members", async () => {
+      mockQueryClient.setQueryData(["web-client-config"], { app_mode: "saas" });
+      mockQueryClient.setQueryData(["organizations"], {
+        items: [MOCK_PERSONAL_ORG],
+        currentOrgId: MOCK_PERSONAL_ORG.id,
+      });
+      useSelectedOrganizationStore.setState({ organizationId: "1" });
+
+      vi.spyOn(organizationService, "getMe").mockResolvedValue(
+        createMockUser({ role: "member", org_id: "1" }),
+      );
+
+      const request = new Request("http://localhost/settings/usage");
+      // @ts-expect-error - test only needs request and params, not full loader args
+      const result = await clientLoader({ request, params: {} });
+
+      expect(result).toBeNull();
+    });
+
   });
 
   describe("hide page feature flags", () => {

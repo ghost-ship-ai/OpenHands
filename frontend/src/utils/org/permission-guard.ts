@@ -2,9 +2,11 @@ import { redirect } from "react-router";
 import OptionService from "#/api/option-service/option-service.api";
 import { WebClientConfig } from "#/api/option-service/option.types";
 import { queryClient } from "#/query-client-config";
+import { getSelectedOrganizationIdFromStore } from "#/stores/selected-organization-store";
 import { getFirstAvailablePath } from "#/utils/settings-utils";
 import { getActiveOrganizationUser } from "./permission-checks";
 import { PermissionKey, rolePermissions } from "./permissions";
+import { canAccessUsageDashboard } from "./usage-access";
 
 /**
  * Helper to get config, using cache or fetching if needed.
@@ -78,6 +80,44 @@ export const createPermissionGuard =
 
     if (!rolePermissions[userRole].includes(requiredPermission)) {
       return getRedirectResponse();
+    }
+
+    return null;
+  };
+
+export const createUsageDashboardGuard =
+  (customRedirectPath?: string) =>
+  async ({ request }: { request: Request }) => {
+    const config = await getConfig();
+
+    if (config?.app_mode === "oss") {
+      return null;
+    }
+
+    const user = await getActiveOrganizationUser();
+    const organizationsData = queryClient.getQueryData<{
+      items: Array<{ id: string; is_personal?: boolean }>;
+      currentOrgId: string | null;
+    }>(["organizations"]);
+    const selectedOrgId =
+      getSelectedOrganizationIdFromStore() ??
+      organizationsData?.currentOrgId ??
+      user?.org_id;
+    const selectedOrg = organizationsData?.items?.find(
+      (organization) => organization.id === selectedOrgId,
+    );
+
+    const url = new URL(request.url);
+    const currentPath = url.pathname;
+    const redirectPath =
+      customRedirectPath ?? (await getPermissionDeniedFallback());
+
+    if (redirectPath === currentPath) {
+      return null;
+    }
+
+    if (!user || !canAccessUsageDashboard(selectedOrg, user.role)) {
+      return redirect(redirectPath);
     }
 
     return null;

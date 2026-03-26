@@ -2,6 +2,7 @@ import {
   Organization,
   OrganizationMember,
   OrganizationMembersPage,
+  OrganizationUsage,
   UpdateOrganizationMemberParams,
 } from "#/types/org";
 import { openHands } from "../open-hands-axios";
@@ -104,6 +105,13 @@ export const organizationService = {
     const { data } = await openHands.get<{
       cardNumber: string;
     }>(`/api/organizations/${orgId}/payment`);
+    return data;
+  },
+
+  getOrganizationUsage: async ({ orgId }: { orgId: string }) => {
+    const { data } = await openHands.get<OrganizationUsage>(
+      `/api/organizations/${orgId}/usage`,
+    );
     return data;
   },
 

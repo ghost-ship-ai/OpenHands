@@ -483,3 +483,32 @@ class OrgAppSettingsUpdate(BaseModel):
         if v is not None and v <= 0:
             raise ValueError('max_budget_per_task must be greater than 0')
         return v
+
+
+class UsageDashboardSummary(BaseModel):
+    """Summary metrics for the usage dashboard."""
+
+    average_cost_per_conversation_last_30_days: float = 0.0
+    total_conversations: int = 0
+
+
+class UsageDashboardDailyConversationCount(BaseModel):
+    """Daily conversation count for the usage dashboard trend chart."""
+
+    date: str
+    conversation_count: int
+
+
+class UsageDashboardRepositoryCount(BaseModel):
+    """Conversation counts grouped by repository."""
+
+    repository: str
+    conversation_count: int
+
+
+class OrgUsageDashboardResponse(BaseModel):
+    """Response payload for the organization usage dashboard."""
+
+    summary: UsageDashboardSummary
+    daily_conversations: list[UsageDashboardDailyConversationCount]
+    top_repositories: list[UsageDashboardRepositoryCount]

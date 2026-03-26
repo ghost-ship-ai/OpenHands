@@ -13,6 +13,7 @@ import { getActiveOrganizationUser } from "#/utils/org/permission-checks";
 import { getSelectedOrganizationIdFromStore } from "#/stores/selected-organization-store";
 import { rolePermissions } from "#/utils/org/permissions";
 import { isBillingHidden } from "#/utils/org/billing-visibility";
+import { canAccessUsageDashboard } from "#/utils/org/usage-access";
 import {
   isSettingsPageHidden,
   getFirstAvailablePath,
@@ -29,6 +30,7 @@ const SAAS_ONLY_PATHS = [
   "/settings/api-keys",
   "/settings/team",
   "/settings/org",
+  "/settings/usage",
 ];
 
 export const clientLoader = async ({ request }: Route.ClientLoaderArgs) => {
@@ -64,7 +66,8 @@ export const clientLoader = async ({ request }: Route.ClientLoaderArgs) => {
   if (
     pathname === "/settings/billing" ||
     pathname === "/settings/org" ||
-    pathname === "/settings/org-members"
+    pathname === "/settings/org-members" ||
+    pathname === "/settings/usage"
   ) {
     const user = await getActiveOrganizationUser();
 
@@ -94,6 +97,13 @@ export const clientLoader = async ({ request }: Route.ClientLoaderArgs) => {
           const fallbackPath = getFirstAvailablePath(isSaas, featureFlags);
           return redirect(fallbackPath ?? "/settings");
         }
+      }
+    }
+
+    if (pathname === "/settings/usage") {
+      if (!user || !canAccessUsageDashboard(selectedOrg, user.role)) {
+        const fallbackPath = getFirstAvailablePath(isSaas, featureFlags);
+        return redirect(fallbackPath ?? "/settings");
       }
     }
 

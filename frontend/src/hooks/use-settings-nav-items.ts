@@ -7,6 +7,7 @@ import {
 } from "#/constants/settings-nav";
 import { OrganizationUserRole } from "#/types/org";
 import { isBillingHidden } from "#/utils/org/billing-visibility";
+import { canAccessUsageDashboard } from "#/utils/org/usage-access";
 import { isSettingsPageHidden } from "#/utils/settings-utils";
 import { useMe } from "./query/use-me";
 import { usePermission } from "./organizations/use-permissions";
@@ -38,12 +39,14 @@ export function useSettingsNavItems(): SettingsNavRenderedItem[] {
   const { data: user } = useMe();
   const userRole: OrganizationUserRole = user?.role ?? "member";
   const { hasPermission } = usePermission(userRole);
-  const { isPersonalOrg, isTeamOrg, organizationId } = useOrgTypeAndAccess();
+  const { isPersonalOrg, isTeamOrg, organizationId, selectedOrg } =
+    useOrgTypeAndAccess();
 
   const shouldHideBilling = isBillingHidden(
     config,
     hasPermission("view_billing"),
   );
+  const canViewUsage = canAccessUsageDashboard(selectedOrg, userRole);
   const isSaasMode = config?.app_mode === "saas";
   const featureFlags = config?.feature_flags;
   const isAdminOrOwner = userRole === "admin" || userRole === "owner";
@@ -69,6 +72,9 @@ export function useSettingsNavItems(): SettingsNavRenderedItem[] {
     isPersonalOrg
   ) {
     items = items.filter((item) => item.to !== "/settings/org-members");
+  }
+  if (!organizationId || !canViewUsage) {
+    items = items.filter((item) => item.to !== "/settings/usage");
   }
 
   // For OSS mode or non-SaaS, return flat list without sections

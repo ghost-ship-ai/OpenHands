@@ -46,6 +46,27 @@ export interface OrganizationMember {
   status: "active" | "invited" | "inactive";
 }
 
+export interface OrganizationUsageSummary {
+  average_cost_per_conversation_last_30_days: number;
+  total_conversations: number;
+}
+
+export interface OrganizationUsageDailyConversationCount {
+  date: string;
+  conversation_count: number;
+}
+
+export interface OrganizationUsageRepositoryCount {
+  repository: string;
+  conversation_count: number;
+}
+
+export interface OrganizationUsage {
+  summary: OrganizationUsageSummary;
+  daily_conversations: OrganizationUsageDailyConversationCount[];
+  top_repositories: OrganizationUsageRepositoryCount[];
+}
+
 export interface OrganizationMembersPage {
   items: OrganizationMember[];
   current_page: number;

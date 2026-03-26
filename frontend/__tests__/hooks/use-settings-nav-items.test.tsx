@@ -151,6 +151,11 @@ describe("useSettingsNavItems", () => {
       mockConfig("saas");
       mockOrgTypeAndAccess.isTeamOrg = true;
       mockOrgTypeAndAccess.organizationId = "org-123";
+      mockOrgTypeAndAccess.selectedOrg = {
+        id: "org-123",
+        is_personal: false,
+      };
+
       mockMe.data = { role: "admin" };
 
       const { result } = renderHook(() => useSettingsNavItems(), { wrapper });
@@ -176,6 +181,10 @@ describe("useSettingsNavItems", () => {
       mockConfig("saas");
       mockOrgTypeAndAccess.isPersonalOrg = true;
       mockOrgTypeAndAccess.organizationId = "org-123";
+      mockOrgTypeAndAccess.selectedOrg = {
+        id: "org-123",
+        is_personal: true,
+      };
       mockMe.data = { role: "admin" };
 
       const { result } = renderHook(() => useSettingsNavItems(), { wrapper });
@@ -201,6 +210,10 @@ describe("useSettingsNavItems", () => {
       mockConfig("saas");
       mockOrgTypeAndAccess.isTeamOrg = true;
       mockOrgTypeAndAccess.organizationId = "org-123";
+      mockOrgTypeAndAccess.selectedOrg = {
+        id: "org-123",
+        is_personal: false,
+      };
       mockMe.data = { role: "member" };
 
       const { result } = renderHook(() => useSettingsNavItems(), { wrapper });
@@ -252,6 +265,10 @@ describe("useSettingsNavItems", () => {
       mockConfig("saas");
       mockOrgTypeAndAccess.isTeamOrg = true;
       mockOrgTypeAndAccess.organizationId = "org-123";
+      mockOrgTypeAndAccess.selectedOrg = {
+        id: "org-123",
+        is_personal: false,
+      };
       mockMe.data = { role: "admin" };
 
       const { result } = renderHook(() => useSettingsNavItems(), { wrapper });
@@ -275,22 +292,54 @@ describe("useSettingsNavItems", () => {
       mockOrgTypeAndAccess.isPersonalOrg = true;
       mockOrgTypeAndAccess.isTeamOrg = false;
       mockOrgTypeAndAccess.organizationId = "org-123";
+      mockOrgTypeAndAccess.selectedOrg = {
+        id: "org-123",
+        is_personal: true,
+      };
       mockMe.data = { role: "admin" };
 
       const { result } = renderHook(() => useSettingsNavItems(), { wrapper });
 
-      // Wait for config to load
       await waitFor(() => {
         expect(result.current.length).toBeGreaterThan(0);
-        expect(
-          findItemByPath(result.current, "/settings/user"),
-        ).toBeDefined();
+        expect(findItemByPath(result.current, "/settings/user")).toBeDefined();
       });
 
-      // Billing should be visible for personal orgs
-      expect(
-        findItemByPath(result.current, "/settings/billing"),
-      ).toBeDefined();
+      expect(findItemByPath(result.current, "/settings/billing")).toBeDefined();
+    });
+
+    it("should show usage route for personal workspaces", async () => {
+      mockConfig("saas");
+      mockOrgTypeAndAccess.isPersonalOrg = true;
+      mockOrgTypeAndAccess.organizationId = "org-123";
+      mockOrgTypeAndAccess.selectedOrg = {
+        id: "org-123",
+        is_personal: true,
+      };
+      mockMe.data = { role: "member" };
+
+      const { result } = renderHook(() => useSettingsNavItems(), { wrapper });
+
+      await waitFor(() => {
+        expect(findItemByPath(result.current, "/settings/usage")).toBeDefined();
+      });
+    });
+
+    it("should hide usage route for team members", async () => {
+      mockConfig("saas");
+      mockOrgTypeAndAccess.isTeamOrg = true;
+      mockOrgTypeAndAccess.organizationId = "org-123";
+      mockOrgTypeAndAccess.selectedOrg = {
+        id: "org-123",
+        is_personal: false,
+      };
+      mockMe.data = { role: "member" };
+
+      const { result } = renderHook(() => useSettingsNavItems(), { wrapper });
+
+      await waitFor(() => {
+        expect(findItemByPath(result.current, "/settings/usage")).toBeUndefined();
+      });
     });
   });
 
