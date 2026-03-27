@@ -18,3 +18,7 @@ CREDIT_LIMIT_REACHED = 'credit limit reached'
 USER_ACTIVATED = 'user activated'
 GIT_PROVIDER_CONNECTED = 'git provider connected'
 ONBOARDING_COMPLETED = 'onboarding completed'
+
+# Enterprise lead-gen events
+SAAS_SELFHOSTED_INQUIRY = 'saas selfhosted inquiry'
+ENTERPRISE_LEAD_FORM_SUBMITTED = 'enterprise lead form submitted'

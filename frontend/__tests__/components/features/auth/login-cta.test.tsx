@@ -4,6 +4,13 @@ import userEvent from "@testing-library/user-event";
 import { createRoutesStub } from "react-router";
 import { LoginCTA } from "#/components/features/auth/login-cta";
 
+vi.mock("#/hooks/use-client-analytics", () => ({
+  useClientAnalytics: () => ({
+    trackSaasSelfhostedInquiry: vi.fn(),
+    trackEnterpriseLeadFormSubmitted: vi.fn(),
+  }),
+}));
+
 describe("LoginCTA", () => {
   afterEach(() => {
     vi.clearAllMocks();

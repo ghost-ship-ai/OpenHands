@@ -5,9 +5,16 @@ import { CardTitle } from "#/ui/card-title";
 import { Typography } from "#/ui/typography";
 import { I18nKey } from "#/i18n/declaration";
 import StackedIcon from "#/icons/stacked.svg?react";
+import { useClientAnalytics } from "#/hooks/use-client-analytics";
 
 export function ContextMenuCTA() {
   const { t } = useTranslation();
+  const { trackSaasSelfhostedInquiry } = useClientAnalytics();
+
+  const handleLearnMoreClick = () => {
+    trackSaasSelfhostedInquiry({ location: "context_menu" });
+  };
+
   return (
     <Card
       testId="context-menu-cta"
@@ -40,6 +47,7 @@ export function ContextMenuCTA() {
             href="https://openhands.dev/enterprise/"
             target="_blank"
             rel="noopener noreferrer"
+            onClick={handleLearnMoreClick}
             className={cn(
               "inline-flex items-center justify-center",
               "h-[40px] px-4 rounded-[4px]",

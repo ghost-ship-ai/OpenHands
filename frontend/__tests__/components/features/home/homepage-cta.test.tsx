@@ -23,6 +23,13 @@ vi.mock("react-i18next", async () => {
   };
 });
 
+vi.mock("#/hooks/use-client-analytics", () => ({
+  useClientAnalytics: () => ({
+    trackSaasSelfhostedInquiry: vi.fn(),
+    trackEnterpriseLeadFormSubmitted: vi.fn(),
+  }),
+}));
+
 // Mock local storage
 vi.mock("#/utils/local-storage", () => ({
   setCTADismissed: vi.fn(),

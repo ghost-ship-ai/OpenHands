@@ -1,9 +1,9 @@
 import { useTranslation } from "react-i18next";
-import { usePostHog } from "posthog-js/react";
 import { I18nKey } from "#/i18n/declaration";
 import { H2, Text } from "#/ui/typography";
 import CheckCircleFillIcon from "#/icons/check-circle-fill.svg?react";
 import { ENABLE_PROJ_USER_JOURNEY } from "#/utils/feature-flags";
+import { useClientAnalytics } from "#/hooks/use-client-analytics";
 
 const ENTERPRISE_FEATURE_KEYS: I18nKey[] = [
   I18nKey.ENTERPRISE$FEATURE_DATA_PRIVACY,
@@ -14,14 +14,14 @@ const ENTERPRISE_FEATURE_KEYS: I18nKey[] = [
 
 export function EnterpriseBanner() {
   const { t } = useTranslation();
-  const posthog = usePostHog();
+  const { trackSaasSelfhostedInquiry } = useClientAnalytics();
 
   if (!ENABLE_PROJ_USER_JOURNEY()) {
     return null;
   }
 
   const handleLearnMore = () => {
-    posthog?.capture("saas_selfhosted_inquiry");
+    trackSaasSelfhostedInquiry({ location: "device_verify" });
   };
 
   return (

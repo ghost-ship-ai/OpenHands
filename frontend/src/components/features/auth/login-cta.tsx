@@ -6,6 +6,7 @@ import { Typography } from "#/ui/typography";
 import { I18nKey } from "#/i18n/declaration";
 import { cn } from "#/utils/utils";
 import StackedIcon from "#/icons/stacked.svg?react";
+import { useClientAnalytics } from "#/hooks/use-client-analytics";
 
 type LoginCTAProps = {
   className?: string;
@@ -20,6 +21,7 @@ export function LoginCTA({
   source = "login_page",
 }: LoginCTAProps = {}) {
   const { t } = useTranslation();
+  const { trackSaasSelfhostedInquiry } = useClientAnalytics();
   const isDeviceVerifySource = source === "device_verify";
   const learnMoreButtonClassName = cn(
     "inline-flex items-center justify-center",
@@ -29,6 +31,10 @@ export function LoginCTA({
     "font-semibold text-sm",
     "transition-colors",
   );
+
+  const handleLearnMoreClick = () => {
+    trackSaasSelfhostedInquiry({ location: source });
+  };
 
   return (
     <Card
@@ -69,6 +75,7 @@ export function LoginCTA({
               href={ENTERPRISE_URL}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={handleLearnMoreClick}
               className={learnMoreButtonClassName}
             >
               {t(I18nKey.CTA$LEARN_MORE)}
@@ -76,6 +83,7 @@ export function LoginCTA({
           ) : (
             <Link
               to={INFORMATION_REQUEST_PATH}
+              onClick={handleLearnMoreClick}
               className={learnMoreButtonClassName}
             >
               {t(I18nKey.CTA$LEARN_MORE)}

@@ -9,6 +9,13 @@ import {
 } from "#/components/features/onboarding/information-request-form";
 import { EnterpriseFormData } from "#/utils/local-storage";
 
+vi.mock("#/hooks/use-client-analytics", () => ({
+  useClientAnalytics: () => ({
+    trackSaasSelfhostedInquiry: vi.fn(),
+    trackEnterpriseLeadFormSubmitted: vi.fn(),
+  }),
+}));
+
 const mockOnBack = vi.fn();
 
 // Wrapper to manage form state (needed since component is controlled)

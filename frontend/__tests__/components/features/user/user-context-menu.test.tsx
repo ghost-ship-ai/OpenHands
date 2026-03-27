@@ -29,6 +29,13 @@ vi.mock("#/utils/feature-flags", () => ({
   ENABLE_PROJ_USER_JOURNEY: () => mockEnableProjUserJourney(),
 }));
 
+vi.mock("#/hooks/use-client-analytics", () => ({
+  useClientAnalytics: () => ({
+    trackSaasSelfhostedInquiry: vi.fn(),
+    trackEnterpriseLeadFormSubmitted: vi.fn(),
+  }),
+}));
+
 // Import the mocked modules
 import * as breakpoint from "#/hooks/use-breakpoint";
 

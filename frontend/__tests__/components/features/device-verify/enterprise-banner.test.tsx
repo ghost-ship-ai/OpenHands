@@ -4,19 +4,20 @@ import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "test-utils";
 import { EnterpriseBanner } from "#/components/features/device-verify/enterprise-banner";
 
-const mockCapture = vi.fn();
-vi.mock("posthog-js/react", () => ({
-  usePostHog: () => ({
-    capture: mockCapture,
-  }),
-}));
-
 const { ENABLE_PROJ_USER_JOURNEY_MOCK } = vi.hoisted(() => ({
   ENABLE_PROJ_USER_JOURNEY_MOCK: vi.fn(() => true),
 }));
 
 vi.mock("#/utils/feature-flags", () => ({
   ENABLE_PROJ_USER_JOURNEY: () => ENABLE_PROJ_USER_JOURNEY_MOCK(),
+}));
+
+const mockTrackSaasSelfhostedInquiry = vi.fn();
+vi.mock("#/hooks/use-client-analytics", () => ({
+  useClientAnalytics: () => ({
+    trackSaasSelfhostedInquiry: mockTrackSaasSelfhostedInquiry,
+    trackEnterpriseLeadFormSubmitted: vi.fn(),
+  }),
 }));
 
 describe("EnterpriseBanner", () => {
@@ -102,7 +103,9 @@ describe("EnterpriseBanner", () => {
       });
       await user.click(link);
 
-      expect(mockCapture).toHaveBeenCalledWith("saas_selfhosted_inquiry");
+      expect(mockTrackSaasSelfhostedInquiry).toHaveBeenCalledWith({
+        location: "device_verify",
+      });
     });
 
     it("should have correct href attribute for opening in new tab", () => {

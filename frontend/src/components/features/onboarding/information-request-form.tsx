@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { I18nKey } from "#/i18n/declaration";
+import { useClientAnalytics } from "#/hooks/use-client-analytics";
 import { Card } from "#/ui/card";
 import { Typography } from "#/ui/typography";
 import {
@@ -31,6 +32,7 @@ export function InformationRequestForm({
 }: InformationRequestFormProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { trackEnterpriseLeadFormSubmitted } = useClientAnalytics();
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -47,6 +49,14 @@ export function InformationRequestForm({
     }
 
     setIsSubmitting(true);
+
+    trackEnterpriseLeadFormSubmitted({
+      requestType,
+      name: formData.name.trim(),
+      company: formData.company.trim(),
+      email: formData.email.trim(),
+      message: formData.message.trim(),
+    });
 
     // Clear form data from localStorage and reset form state
     clearEnterpriseFormData(requestType);
