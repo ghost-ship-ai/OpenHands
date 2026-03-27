@@ -173,6 +173,8 @@ Enterprise uses Alembic for database migrations. When making schema changes:
 1. Create migration files in `enterprise/migrations/versions/`
 2. Test migrations thoroughly
 3. The CI will check for migration conflicts on PRs
+- When writing enterprise migrations against PostgreSQL UUID columns, avoid coercing fetched UUIDs to `str` in raw SQL parameter dicts; pass the UUID object through so comparisons like `WHERE org_id = :org_id` keep the correct type.
+
 
 **Integration Development:**
 The enterprise codebase includes integrations for:

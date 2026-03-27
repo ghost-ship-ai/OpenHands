@@ -33,7 +33,7 @@ def upgrade() -> None:
             sa.text(
                 'UPDATE org_member SET mcp_config = :config WHERE org_id = :org_id'
             ),
-            {'config': mcp_config, 'org_id': str(org_id)},
+            {'config': mcp_config, 'org_id': org_id},
         )
 
 
