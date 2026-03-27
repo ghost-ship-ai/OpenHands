@@ -95,7 +95,7 @@ class GraySwanAnalyzer(SecurityAnalyzer):
         """Get or create HTTP session."""
         if self.session is None:
             self.session = aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeoput(total=self.timeout),  # type: ignore[operator]
+                timeout=aiohttp.ClientTimeout(total=self.timeout),
                 headers={  # type: ignore[arg-type]
                     'Authorization': f'Bearer {self.api_key}',
                     'x-grayswan-api-key': self.api_key,
