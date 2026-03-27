@@ -8,10 +8,7 @@ import {
   UpdateAutomationRequest,
 } from "./automation-service.types";
 
-// Routed through the enterprise backend proxy at /api/automations,
-// which translates session-cookie auth to Bearer API-key auth and
-// forwards to the internal automation service at /v1/*.
-const BASE = "/api/automations";
+const BASE = "/api/automation/v1";
 
 export class AutomationService {
   // --- Automations CRUD ---
