@@ -70,11 +70,16 @@ class SetTitleCallbackProcessor(EventCallbackProcessor):
             title = None
             for delay_s in _TITLE_POLL_DELAYS_S:
                 try:
+                    headers = (
+                        {
+                            'X-Session-API-Key': app_conversation.session_api_key,
+                        }
+                        if app_conversation.session_api_key
+                        else {}
+                    )
                     response = await httpx_client.get(
                         app_conversation_url,
-                        headers={
-                            'X-Session-API-Key': app_conversation.session_api_key,
-                        },
+                        headers=headers,
                     )
                     response.raise_for_status()
                 except httpx.HTTPError as exc:
