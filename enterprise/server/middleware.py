@@ -12,6 +12,7 @@ from server.auth.auth_error import (
 )
 from server.auth.gitlab_sync import schedule_gitlab_repo_sync
 from server.auth.saas_user_auth import SaasUserAuth, token_manager
+from server.logger import set_user_id
 from server.routes.auth import set_response_cookie
 from server.utils.url_utils import get_cookie_domain, get_cookie_samesite
 
@@ -32,6 +33,9 @@ class SetAuthCookieMiddleware:
         try:
             if self._should_attach(request):
                 self._check_tos(request)
+
+            # Set user_id in logging context early in the request lifecycle
+            await self._set_user_id_context(request)
 
             response: Response = await call_next(request)
             if not keycloak_auth_cookie:
@@ -94,6 +98,20 @@ class SetAuthCookieMiddleware:
                     samesite=get_cookie_samesite(),
                 )
             return response
+        finally:
+            # Clear user_id context at the end of request
+            set_user_id(None)
+
+    async def _set_user_id_context(self, request: Request) -> None:
+        """Set the user_id in the logging context from the request's user_auth."""
+        try:
+            user_auth = self._get_user_auth(request)
+            if user_auth:
+                user_id = await user_auth.get_user_id()
+                set_user_id(user_id)
+        except Exception:
+            # Don't fail the request if we can't get the user_id
+            pass
 
     def _get_user_auth(self, request: Request) -> SaasUserAuth | None:
         user_auth: UserAuth | None = getattr(request.state, 'user_auth', None)

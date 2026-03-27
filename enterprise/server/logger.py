@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import sys
+from contextvars import ContextVar
 from datetime import datetime
 from pathlib import Path
 from typing import TextIO
@@ -24,6 +25,27 @@ SITE_PACKAGES_PREFIX = (
 )
 # Make the JSON easy to read in the console - useful for non cloud environments
 LOG_JSON_FOR_CONSOLE = int(os.getenv('LOG_JSON_FOR_CONSOLE', '0'))
+
+# Context variable to store the current user ID for logging
+_user_id_context: ContextVar[str | None] = ContextVar('user_id', default=None)
+
+
+def set_user_id(user_id: str | None) -> None:
+    """Set the user ID for the current context (request scope)."""
+    _user_id_context.set(user_id)
+
+
+def get_user_id() -> str | None:
+    """Get the user ID from the current context."""
+    return _user_id_context.get()
+
+
+class UserIdFilter(logging.Filter):
+    """Logging filter that adds user_id to log records from context."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.user_id = get_user_id()
+        return True
 
 
 def format_stack(stack: str) -> list[str]:
@@ -79,8 +101,11 @@ def setup_json_logger(
     handler = logging.StreamHandler(_out)
     handler.setLevel(level)
 
+    # Add user_id filter to include user context in logs
+    handler.addFilter(UserIdFilter())
+
     formatter = JsonFormatter(
-        '%(message)s%(levelname)s%(module)s%(funcName)s%(lineno)d',
+        '%(message)s%(levelname)s%(module)s%(funcName)s%(lineno)d%(user_id)s',
         rename_fields={'levelname': 'severity'},
         json_serializer=custom_json_serializer,
         # Use 'ts' for consistency with LOG_JSON_FOR_CONSOLE mode (skip when console mode to avoid duplicates)
