@@ -24,6 +24,7 @@ dependencies = [
   "aiohttp>=3.13.3",
   "anthropic[vertex]",
   "anyio==4.9",
+  "asgi-correlation-id>=4.3.4,<5",
   "asyncpg>=0.30",
   "authlib>=1.6.9",
   "bashlex>=0.18",
@@ -104,7 +105,6 @@ dependencies = [
   "uvicorn",
   "whatthepatch>=1.0.6",
   "zope-interface==7.2",
-  "asgi-correlation-id (>=4.3.4,<5.0.0)",
 ]
 
 optional-dependencies.third_party_runtimes = [
