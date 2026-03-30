@@ -98,9 +98,9 @@ class SetAuthCookieMiddleware:
                     samesite=get_cookie_samesite(),
                 )
             return response
-        finally:
-            # Clear user_id context at the end of request
-            set_user_id(None)
+        # Note: We don't clear user_id context here because:
+        # 1. contextvars are automatically scoped per async task (no leak between requests)
+        # 2. Clearing here would remove user_id before uvicorn logs the access log
 
     async def _set_user_id_context(self, request: Request) -> None:
         """Set the user_id in the logging context from the request's user_auth.
