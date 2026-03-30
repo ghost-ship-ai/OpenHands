@@ -17,9 +17,6 @@ sys.modules['google.cloud.storage'] = MagicMock()
 sys.modules['google.cloud.storage.blob'] = MagicMock()
 sys.modules['google.cloud.storage.client'] = MagicMock()
 sys.modules['google.cloud.storage.bucket'] = MagicMock()
-
-
-
 sys.modules['google.cloud.sql.connector.Connector'] = MagicMock()
 mock_db_module = MagicMock()
 mock_db_module.a_session_maker = MagicMock()
