@@ -33,8 +33,7 @@ RUN cd /tmp/enterprise && \
     # Export only main dependencies with hashes for supply chain security
     /app/.venv/bin/poetry export --only main -o requirements.txt && \
     # Remove the local path dependency (openhands-ai is already in base image)
-    # and git-based SDK dependencies (already installed via the base app image)
-    sed -i '/^-e /d; /openhands-ai/d; /^openhands-.*@ git+/d' requirements.txt && \
+    sed -i '/^-e /d; /openhands-ai/d' requirements.txt && \
     # Install pinned dependencies from lock file
     /app/.venv/bin/pip install -r requirements.txt && \
     # Cleanup - return to /app before removing /tmp/enterprise

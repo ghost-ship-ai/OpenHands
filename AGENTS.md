@@ -14,8 +14,6 @@ make build && make run FRONTEND_PORT=12000 FRONTEND_HOST=0.0.0.0 BACKEND_HOST=0.
 ```
 
 IMPORTANT: Before making any changes to the codebase, ALWAYS run `make install-pre-commit-hooks` to ensure pre-commit hooks are properly installed.
-- If `make install-pre-commit-hooks` fails because `python3.12` is missing in the sandbox, install it with `uv python install 3.12` and add `~/.local/bin` to `PATH` before retrying.
-- When updating OpenHands to a different unreleased `software-agent-sdk` branch or to `main`, update all six SDK references in `pyproject.toml` and regenerate `poetry.lock`, `uv.lock`, and `enterprise/poetry.lock`.
 
 Before pushing any changes, you MUST ensure that any lint errors or simple test errors have been fixed.
 
@@ -175,8 +173,6 @@ Enterprise uses Alembic for database migrations. When making schema changes:
 1. Create migration files in `enterprise/migrations/versions/`
 2. Test migrations thoroughly
 3. The CI will check for migration conflicts on PRs
-- When writing enterprise migrations against PostgreSQL UUID columns, avoid coercing fetched UUIDs to `str` in raw SQL parameter dicts; pass the UUID object through so comparisons like `WHERE org_id = :org_id` keep the correct type.
-
 
 **Integration Development:**
 The enterprise codebase includes integrations for:
