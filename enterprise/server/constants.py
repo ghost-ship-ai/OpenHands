@@ -15,7 +15,8 @@ IS_FEATURE_ENV = (
 )  # Does not include the staging deployment
 IS_LOCAL_ENV = bool(HOST == 'localhost')
 
-# _is_all_hands_managed_domain() can be removed/replaced when a self-hosted specific 
+
+# _is_all_hands_managed_domain() can be removed/replaced when a self-hosted specific
 # env var is created (e.g is_self_hosted` or `deployment_mode`)
 def _is_all_hands_managed_domain(host: str) -> bool:
     """Check if the host is an All-Hands managed domain."""
