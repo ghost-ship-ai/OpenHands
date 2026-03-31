@@ -1,5 +1,6 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
+import { openHands } from "#/api/open-hands-axios";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
 
 type SubmitOnboardingArgs = {
@@ -8,14 +9,20 @@ type SubmitOnboardingArgs = {
 
 export const useSubmitOnboarding = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ selections }: SubmitOnboardingArgs) =>
-      // TODO: mark onboarding as complete
+    mutationFn: async ({ selections }: SubmitOnboardingArgs) => {
+      // Mark onboarding as complete on the backend
+      await openHands.post("/api/complete_onboarding");
       // TODO: persist user responses
-      ({ selections }),
+      return { selections };
+    },
     onSuccess: () => {
-      const finalRedirectUrl = "/"; // TODO: use redirect url from api response
+      // Invalidate settings query to refresh onboarding_completed status
+      queryClient.invalidateQueries({ queryKey: ["settings"] });
+
+      const finalRedirectUrl = "/";
       // Check if the redirect URL is an external URL (starts with http or https)
       if (
         finalRedirectUrl.startsWith("http://") ||

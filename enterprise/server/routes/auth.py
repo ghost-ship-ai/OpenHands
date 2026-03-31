@@ -27,7 +27,13 @@ from server.auth.user.user_authorizer import (
     depends_user_authorizer,
 )
 from server.config import sign_token
-from server.constants import IS_FEATURE_ENV, IS_LOCAL_ENV
+from server.constants import (
+    DEPLOYMENT_MODE,
+    ENABLE_ONBOARDING,
+    IS_FEATURE_ENV,
+    IS_LOCAL_ENV,
+    ROLE_OWNER,
+)
 from server.routes.event_webhook import _get_session_api_key, _get_user_id
 from server.services.org_invitation_service import (
     EmailMismatchError,
@@ -40,6 +46,8 @@ from server.utils.rate_limit_utils import check_rate_limit_by_user_id
 from server.utils.url_utils import get_cookie_domain, get_cookie_samesite, get_web_url
 from sqlalchemy import select
 from storage.database import a_session_maker
+from storage.org_member_store import OrgMemberStore
+from storage.role_store import RoleStore
 from storage.user import User
 from storage.user_store import UserStore
 
@@ -462,8 +470,18 @@ async def keycloak_callback(
             tos_redirect_url = f'{tos_redirect_url}&invitation_success=true'
         response = RedirectResponse(tos_redirect_url, status_code=302)
     else:
+        # User has accepted TOS - check if they need onboarding
+        if await _should_redirect_to_onboarding(user_id, user):
+            redirect_url = f'{web_url}/onboarding'
+            logger.info(
+                'Redirecting returning user to onboarding',
+                extra={'user_id': user_id, 'deployment_mode': DEPLOYMENT_MODE},
+            )
         if invitation_token:
-            redirect_url = f'{redirect_url}&invitation_success=true'
+            if '?' in redirect_url:
+                redirect_url = f'{redirect_url}&invitation_success=true'
+            else:
+                redirect_url = f'{redirect_url}?invitation_success=true'
         response = RedirectResponse(redirect_url, status_code=302)
 
     set_response_cookie(
@@ -549,6 +567,39 @@ async def authenticate(request: Request):
         return response
 
 
+async def _should_redirect_to_onboarding(user_id: str, user: User) -> bool:
+    """Check if user should be redirected to onboarding after TOS acceptance.
+
+    Returns True if:
+    - ENABLE_ONBOARDING is True
+    - User has not completed onboarding
+    - Either:
+      - Deployment mode is 'cloud' (all users)
+      - Deployment mode is 'self_hosted' AND user is an owner
+    """
+    if not ENABLE_ONBOARDING:
+        return False
+
+    if user.onboarding_completed:
+        return False
+
+    # Cloud SaaS: all users go to onboarding
+    if DEPLOYMENT_MODE == 'cloud':
+        return True
+
+    # Self-hosted SaaS: only owners go to onboarding
+    if DEPLOYMENT_MODE == 'self_hosted':
+        org_member = await OrgMemberStore.get_org_member_for_current_org(
+            uuid.UUID(user_id)
+        )
+        if org_member:
+            role = await RoleStore.get_role_by_id(org_member.role_id)
+            if role and role.name == ROLE_OWNER:
+                return True
+
+    return False
+
+
 @api_router.post('/accept_tos')
 async def accept_tos(request: Request):
     user_auth = cast(SaasUserAuth, await get_user_auth(request))
@@ -589,6 +640,15 @@ async def accept_tos(request: Request):
 
         logger.info(f'User {user_id} accepted TOS')
 
+    # Check if user should be redirected to onboarding
+    user = await UserStore.get_user_by_id(user_id)
+    if user and await _should_redirect_to_onboarding(user_id, user):
+        redirect_url = f'{web_url}/onboarding'
+        logger.info(
+            'Redirecting user to onboarding after TOS acceptance',
+            extra={'user_id': user_id, 'deployment_mode': DEPLOYMENT_MODE},
+        )
+
     response = JSONResponse(
         status_code=status.HTTP_200_OK, content={'redirect_url': redirect_url}
     )
@@ -602,6 +662,36 @@ async def accept_tos(request: Request):
         accepted_tos=True,
     )
     return response
+
+
+@api_router.post('/complete_onboarding')
+async def complete_onboarding(request: Request):
+    """Mark onboarding as completed for the current user."""
+    user_auth = cast(SaasUserAuth, await get_user_auth(request))
+    user_id = await user_auth.get_user_id()
+
+    if not user_id:
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={'error': 'User is not authenticated'},
+        )
+
+    user = await UserStore.mark_onboarding_completed(user_id)
+    if not user:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={'error': 'User not found'},
+        )
+
+    logger.info(
+        'User completed onboarding',
+        extra={'user_id': user_id},
+    )
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={'message': 'Onboarding completed'},
+    )
 
 
 @api_router.post('/logout')
