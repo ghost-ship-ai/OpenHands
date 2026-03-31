@@ -140,6 +140,26 @@ async def on_conversation_update(
     if conversation_info.execution_status == ConversationExecutionStatus.DELETING:
         return Success()
 
+    # Determine trigger - check for automation metadata first, then fall back to existing
+    trigger = existing.trigger
+    if trigger is None:
+        # Try to look up automation metadata for this sandbox
+        automation_metadata = await _get_sandbox_automation_metadata(sandbox_info.id)
+        if automation_metadata is not None:
+            from openhands.storage.data_models.conversation_metadata import (
+                ConversationTrigger,
+            )
+
+            trigger = ConversationTrigger.AUTOMATION
+            _logger.info(
+                'Applied automation metadata to conversation',
+                extra={
+                    'conversation_id': str(conversation_info.id),
+                    'sandbox_id': sandbox_info.id,
+                    'automation_id': automation_metadata.get('automation_id'),
+                },
+            )
+
     app_conversation_info = AppConversationInfo(
         id=conversation_info.id,
         title=existing.title or f'Conversation {conversation_info.id.hex}',
@@ -150,7 +170,7 @@ async def on_conversation_update(
         selected_repository=existing.selected_repository,
         selected_branch=existing.selected_branch,
         git_provider=existing.git_provider,
-        trigger=existing.trigger,
+        trigger=trigger,
         pr_number=existing.pr_number,
         # Preserve parent/child relationship and other metadata
         parent_conversation_id=existing.parent_conversation_id,
@@ -161,6 +181,41 @@ async def on_conversation_update(
     )
 
     return Success()
+
+
+async def _get_sandbox_automation_metadata(sandbox_id: str) -> dict | None:
+    """Look up automation metadata for a sandbox.
+
+    This is only available in SaaS mode where the enterprise storage is available.
+    Returns None if not in SaaS mode or if no metadata exists.
+    """
+    if app_mode != AppMode.SAAS:
+        return None
+
+    try:
+        from storage.sandbox_automation_metadata_store import (
+            SandboxAutomationMetadataStore,
+        )
+
+        metadata = await SandboxAutomationMetadataStore.get_metadata(sandbox_id)
+        if metadata:
+            return {
+                'automation_id': metadata.automation_id,
+                'automation_name': metadata.automation_name,
+                'trigger_type': metadata.trigger_type,
+                'run_id': metadata.run_id,
+                'extra_metadata': metadata.extra_metadata,
+            }
+    except ImportError:
+        # Enterprise storage not available (e.g., OSS mode)
+        pass
+    except Exception as e:
+        _logger.warning(
+            f'Failed to look up sandbox automation metadata: {e}',
+            extra={'sandbox_id': sandbox_id},
+        )
+
+    return None
 
 
 @router.post('/events/{conversation_id}')

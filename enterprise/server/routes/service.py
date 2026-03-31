@@ -268,3 +268,175 @@ async def delete_user_api_key(
     )
 
     return {'message': 'API key deleted successfully'}
+
+
+# Sandbox automation metadata endpoints
+
+
+class SetSandboxAutomationMetadataRequest(BaseModel):
+    """Request model for setting automation metadata on a sandbox."""
+
+    automation_id: str | None = None
+    automation_name: str | None = None
+    trigger_type: str | None = None
+    run_id: str | None = None
+    extra_metadata: dict | None = None
+
+
+class SandboxAutomationMetadataResponse(BaseModel):
+    """Response model for sandbox automation metadata."""
+
+    sandbox_id: str
+    automation_id: str | None = None
+    automation_name: str | None = None
+    trigger_type: str | None = None
+    run_id: str | None = None
+    extra_metadata: dict | None = None
+
+
+@service_router.put('/sandboxes/{sandbox_id}/automation-metadata')
+async def set_sandbox_automation_metadata(
+    sandbox_id: str,
+    request: SetSandboxAutomationMetadataRequest,
+    x_service_api_key: str | None = Header(default=None, alias='X-Service-API-Key'),
+) -> SandboxAutomationMetadataResponse:
+    """
+    Set automation metadata for a sandbox.
+
+    This endpoint allows the automations service to associate metadata with a sandbox
+    so that any conversations created within that sandbox inherit the automation context.
+
+    The metadata includes:
+    - automation_id: The automation definition ID
+    - automation_name: Human-readable name of the automation
+    - trigger_type: Type of trigger (e.g., 'cron', 'webhook')
+    - run_id: The specific automation run ID
+    - extra_metadata: Additional key-value pairs
+
+    Args:
+        sandbox_id: The sandbox ID to set metadata for
+        request: The metadata to set
+        x_service_api_key: Service API key header for authentication
+
+    Returns:
+        SandboxAutomationMetadataResponse: The stored metadata
+
+    Raises:
+        HTTPException: 401 if service key is invalid
+        HTTPException: 503 if service auth is not configured
+    """
+    # Validate service API key
+    service_id = await validate_service_api_key(x_service_api_key)
+
+    from storage.sandbox_automation_metadata_store import SandboxAutomationMetadataStore
+
+    metadata = await SandboxAutomationMetadataStore.set_metadata(
+        sandbox_id=sandbox_id,
+        automation_id=request.automation_id,
+        automation_name=request.automation_name,
+        trigger_type=request.trigger_type,
+        run_id=request.run_id,
+        extra_metadata=request.extra_metadata,
+    )
+
+    logger.info(
+        'Service set sandbox automation metadata',
+        extra={
+            'service_id': service_id,
+            'sandbox_id': sandbox_id,
+            'automation_id': request.automation_id,
+            'trigger_type': request.trigger_type,
+        },
+    )
+
+    return SandboxAutomationMetadataResponse(
+        sandbox_id=metadata.sandbox_id,
+        automation_id=metadata.automation_id,
+        automation_name=metadata.automation_name,
+        trigger_type=metadata.trigger_type,
+        run_id=metadata.run_id,
+        extra_metadata=metadata.extra_metadata,
+    )
+
+
+@service_router.get('/sandboxes/{sandbox_id}/automation-metadata')
+async def get_sandbox_automation_metadata(
+    sandbox_id: str,
+    x_service_api_key: str | None = Header(default=None, alias='X-Service-API-Key'),
+) -> SandboxAutomationMetadataResponse | None:
+    """
+    Get automation metadata for a sandbox.
+
+    Args:
+        sandbox_id: The sandbox ID to get metadata for
+        x_service_api_key: Service API key header for authentication
+
+    Returns:
+        SandboxAutomationMetadataResponse if found, None otherwise
+
+    Raises:
+        HTTPException: 401 if service key is invalid
+        HTTPException: 404 if metadata not found
+    """
+    # Validate service API key
+    await validate_service_api_key(x_service_api_key)
+
+    from storage.sandbox_automation_metadata_store import SandboxAutomationMetadataStore
+
+    metadata = await SandboxAutomationMetadataStore.get_metadata(sandbox_id)
+    if metadata is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No automation metadata found for sandbox {sandbox_id}',
+        )
+
+    return SandboxAutomationMetadataResponse(
+        sandbox_id=metadata.sandbox_id,
+        automation_id=metadata.automation_id,
+        automation_name=metadata.automation_name,
+        trigger_type=metadata.trigger_type,
+        run_id=metadata.run_id,
+        extra_metadata=metadata.extra_metadata,
+    )
+
+
+@service_router.delete('/sandboxes/{sandbox_id}/automation-metadata')
+async def delete_sandbox_automation_metadata(
+    sandbox_id: str,
+    x_service_api_key: str | None = Header(default=None, alias='X-Service-API-Key'),
+) -> dict:
+    """
+    Delete automation metadata for a sandbox.
+
+    Args:
+        sandbox_id: The sandbox ID to delete metadata for
+        x_service_api_key: Service API key header for authentication
+
+    Returns:
+        Success message
+
+    Raises:
+        HTTPException: 401 if service key is invalid
+        HTTPException: 404 if metadata not found
+    """
+    # Validate service API key
+    service_id = await validate_service_api_key(x_service_api_key)
+
+    from storage.sandbox_automation_metadata_store import SandboxAutomationMetadataStore
+
+    deleted = await SandboxAutomationMetadataStore.delete_metadata(sandbox_id)
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No automation metadata found for sandbox {sandbox_id}',
+        )
+
+    logger.info(
+        'Service deleted sandbox automation metadata',
+        extra={
+            'service_id': service_id,
+            'sandbox_id': sandbox_id,
+        },
+    )
+
+    return {'message': 'Sandbox automation metadata deleted successfully'}
