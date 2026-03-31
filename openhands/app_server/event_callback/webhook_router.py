@@ -141,6 +141,16 @@ async def on_conversation_update(
         return Success()
 
     # Determine trigger - check for automation metadata first, then fall back to existing
+    #
+    # Ordering requirement: The automation service MUST set sandbox metadata
+    # BEFORE starting the entrypoint script that creates conversations.
+    # Current flow guarantees this:
+    #   1. Dispatcher creates sandbox
+    #   2. Dispatcher sets metadata via PUT /api/service/sandboxes/{id}/automation-metadata
+    #   3. Dispatcher starts entrypoint (which creates conversations via SDK)
+    #   4. This webhook handler looks up metadata ✓
+    #
+    # If metadata is not found, it's a normal non-automation conversation.
     trigger = existing.trigger
     if trigger is None:
         # Try to look up automation metadata for this sandbox
@@ -210,9 +220,12 @@ async def _get_sandbox_automation_metadata(sandbox_id: str) -> dict | None:
         # Enterprise storage not available (e.g., OSS mode)
         pass
     except Exception as e:
+        # Log unexpected errors at warning level - these could indicate
+        # database issues or schema mismatches that need investigation
         _logger.warning(
-            f'Failed to look up sandbox automation metadata: {e}',
-            extra={'sandbox_id': sandbox_id},
+            'Failed to look up sandbox automation metadata',
+            extra={'sandbox_id': sandbox_id, 'error': str(e), 'error_type': type(e).__name__},
+            exc_info=True,
         )
 
     return None

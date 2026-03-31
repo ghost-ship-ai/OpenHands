@@ -31,10 +31,7 @@ class SandboxAutomationMetadataModel(Base):
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
     )
-
-    __table_args__ = (
-        Index('ix_sandbox_automation_metadata_sandbox_id', 'sandbox_id'),
-    )
+    # Note: No __table_args__ needed - primary key auto-indexes sandbox_id
 
 
 class SandboxAutomationMetadata(BaseModel):

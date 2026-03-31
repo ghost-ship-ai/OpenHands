@@ -1,6 +1,21 @@
 """Store for sandbox automation metadata.
 
 This module provides CRUD operations for sandbox automation metadata.
+
+Cleanup Strategy:
+-----------------
+Metadata records are ephemeral and only needed during the short window between
+sandbox creation and conversation creation. Once a conversation is created,
+the metadata is copied to the conversation and no longer needed.
+
+Cleanup is handled via a TTL-based approach:
+- Records older than 24 hours can be safely deleted (sandboxes typically run < 1 hour)
+- A periodic cleanup job should be added to delete stale records
+- The created_at column enables efficient cleanup queries
+
+Note: We intentionally don't use CASCADE foreign keys because:
+1. Sandboxes are managed by a separate runtime system (not this DB)
+2. The cost of orphaned records is low (small table, easily cleaned up)
 """
 
 import logging

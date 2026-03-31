@@ -282,6 +282,22 @@ class SetSandboxAutomationMetadataRequest(BaseModel):
     run_id: str | None = None
     extra_metadata: dict | None = None
 
+    @field_validator('automation_id', 'automation_name', 'trigger_type', 'run_id', mode='after')
+    @classmethod
+    def check_at_least_one_field(cls, v, info):
+        """Validation happens at model level, not field level."""
+        return v
+
+    def model_post_init(self, __context) -> None:
+        """Ensure at least one meaningful field is provided."""
+        if all(
+            v is None
+            for v in [self.automation_id, self.automation_name, self.trigger_type, self.run_id]
+        ):
+            raise ValueError(
+                'At least one of automation_id, automation_name, trigger_type, or run_id must be provided'
+            )
+
 
 class SandboxAutomationMetadataResponse(BaseModel):
     """Response model for sandbox automation metadata."""
@@ -328,6 +344,8 @@ async def set_sandbox_automation_metadata(
     # Validate service API key
     service_id = await validate_service_api_key(x_service_api_key)
 
+    # Import here to avoid circular dependency with storage module initialization
+    # and to keep this module loadable in environments without enterprise storage
     from storage.sandbox_automation_metadata_store import SandboxAutomationMetadataStore
 
     metadata = await SandboxAutomationMetadataStore.set_metadata(
@@ -381,6 +399,7 @@ async def get_sandbox_automation_metadata(
     # Validate service API key
     await validate_service_api_key(x_service_api_key)
 
+    # Import here to avoid circular dependency with storage module initialization
     from storage.sandbox_automation_metadata_store import SandboxAutomationMetadataStore
 
     metadata = await SandboxAutomationMetadataStore.get_metadata(sandbox_id)
