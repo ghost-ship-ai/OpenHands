@@ -12,6 +12,7 @@ import {
   pickFirstString,
   pickNullableString,
 } from "#/utils/settings-value-pickers";
+import { parseMcpConfig } from "#/utils/mcp-config";
 
 export const getSettingsQueryFn = async (): Promise<Settings> => {
   const settings = await SettingsService.getSettings();
@@ -52,10 +53,7 @@ export const getSettingsQueryFn = async (): Promise<Settings> => {
         agentSettings["condenser.max_size"],
         settings.condenser_max_size,
       ) ?? DEFAULT_SETTINGS.condenser_max_size,
-    mcp_config:
-      settings.mcp_config ??
-      (agentSettings.mcp_config as Settings["mcp_config"]) ??
-      DEFAULT_SETTINGS.mcp_config,
+    mcp_config: parseMcpConfig(settings.mcp_config ?? agentSettings.mcp_config),
     search_api_key: settings.search_api_key || "",
     email: settings.email || "",
     git_user_name: settings.git_user_name || DEFAULT_SETTINGS.git_user_name,

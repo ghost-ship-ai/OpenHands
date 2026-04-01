@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSettings } from "#/hooks/query/use-settings";
 import SettingsService from "#/api/settings-service/settings-service.api";
 import { MCPConfig } from "#/types/settings";
+import { parseMcpConfig } from "#/utils/mcp-config";
 import { useSelectedOrganizationId } from "#/context/use-selected-organization";
 
 export function useDeleteMcpServer() {
@@ -11,10 +12,9 @@ export function useDeleteMcpServer() {
 
   return useMutation({
     mutationFn: async (serverId: string): Promise<void> => {
-      const currentConfig = settings?.agent_settings?.mcp_config as
-        | MCPConfig
-        | undefined;
-      if (!currentConfig) return;
+      const currentConfig = parseMcpConfig(
+        settings?.agent_settings?.mcp_config,
+      );
 
       const newConfig: MCPConfig = {
         sse_servers: [...currentConfig.sse_servers],

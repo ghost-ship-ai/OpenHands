@@ -11,6 +11,7 @@ import { MCPServerForm } from "#/components/features/settings/mcp-settings/mcp-s
 import { ConfirmationModal } from "#/components/shared/modals/confirmation-modal";
 import { BrandButton } from "#/components/features/settings/brand-button";
 import { MCPConfig } from "#/types/settings";
+import { parseMcpConfig } from "#/utils/mcp-config";
 import { createPermissionGuard } from "#/utils/org/permission-guard";
 import { Typography } from "#/ui/typography";
 
@@ -46,13 +47,9 @@ function MCPSettingsScreen() {
     useState(false);
   const [serverToDelete, setServerToDelete] = useState<string | null>(null);
 
-  const mcpConfig: MCPConfig = (settings?.agent_settings?.mcp_config as
-    | MCPConfig
-    | undefined) || {
-    sse_servers: [],
-    stdio_servers: [],
-    shttp_servers: [],
-  };
+  const mcpConfig: MCPConfig = parseMcpConfig(
+    settings?.agent_settings?.mcp_config,
+  );
 
   const allServers: MCPServerConfig[] = [
     ...mcpConfig.sse_servers.map((server, index) => ({

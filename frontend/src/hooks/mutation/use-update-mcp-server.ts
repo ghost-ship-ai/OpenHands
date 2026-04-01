@@ -7,6 +7,7 @@ import {
   MCPSSEServer,
   MCPStdioServer,
 } from "#/types/settings";
+import { parseMcpConfig } from "#/utils/mcp-config";
 import { useSelectedOrganizationId } from "#/context/use-selected-organization";
 
 type MCPServerType = "sse" | "stdio" | "shttp";
@@ -35,10 +36,9 @@ export function useUpdateMcpServer() {
       serverId: string;
       server: MCPServerConfig;
     }): Promise<void> => {
-      const currentConfig = settings?.agent_settings?.mcp_config as
-        | MCPConfig
-        | undefined;
-      if (!currentConfig) return;
+      const currentConfig = parseMcpConfig(
+        settings?.agent_settings?.mcp_config,
+      );
 
       const newConfig: MCPConfig = {
         sse_servers: [...currentConfig.sse_servers],
