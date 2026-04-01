@@ -1325,3 +1325,87 @@ async def test_migrate_user_sql_multiple_conversations(async_session_maker):
 # statements that have SQLite/UUID compatibility issues in the test environment.
 # The SQL migration tests above (test_migrate_user_sql_type_handling, etc.) verify
 # the SQL operations work correctly with proper type handling.
+
+
+# --- Tests for mark_onboarding_completed ---
+
+
+@pytest.mark.asyncio
+async def test_mark_onboarding_completed_success(async_session_maker):
+    """Test successfully marking onboarding as completed."""
+    user_id = uuid.uuid4()
+    org_id = uuid.uuid4()
+
+    # Create test data
+    async with async_session_maker() as session:
+        org = Org(id=org_id, name='test-org')
+        session.add(org)
+        user = User(id=user_id, current_org_id=org_id, onboarding_completed=False)
+        session.add(user)
+        await session.commit()
+
+    # Test marking onboarding complete
+    with patch('storage.user_store.a_session_maker', async_session_maker):
+        result = await UserStore.mark_onboarding_completed(str(user_id))
+
+    assert result is not None
+    assert result.id == user_id
+    assert result.onboarding_completed is True
+
+
+@pytest.mark.asyncio
+async def test_mark_onboarding_completed_user_not_found(async_session_maker):
+    """Test that mark_onboarding_completed returns None for non-existent user."""
+    non_existent_id = str(uuid.uuid4())
+
+    with patch('storage.user_store.a_session_maker', async_session_maker):
+        result = await UserStore.mark_onboarding_completed(non_existent_id)
+
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_mark_onboarding_completed_already_completed(async_session_maker):
+    """Test marking onboarding complete for user who already completed it."""
+    user_id = uuid.uuid4()
+    org_id = uuid.uuid4()
+
+    # Create user with onboarding already completed
+    async with async_session_maker() as session:
+        org = Org(id=org_id, name='test-org')
+        session.add(org)
+        user = User(id=user_id, current_org_id=org_id, onboarding_completed=True)
+        session.add(user)
+        await session.commit()
+
+    # Should still succeed and return user
+    with patch('storage.user_store.a_session_maker', async_session_maker):
+        result = await UserStore.mark_onboarding_completed(str(user_id))
+
+    assert result is not None
+    assert result.id == user_id
+    assert result.onboarding_completed is True
+
+
+@pytest.mark.asyncio
+async def test_mark_onboarding_completed_user_with_null_onboarding(async_session_maker):
+    """Test marking onboarding complete for user with null onboarding_completed value."""
+    user_id = uuid.uuid4()
+    org_id = uuid.uuid4()
+
+    # Create user with null onboarding_completed (default)
+    async with async_session_maker() as session:
+        org = Org(id=org_id, name='test-org')
+        session.add(org)
+        user = User(
+            id=user_id, current_org_id=org_id
+        )  # onboarding_completed defaults to None
+        session.add(user)
+        await session.commit()
+
+    with patch('storage.user_store.a_session_maker', async_session_maker):
+        result = await UserStore.mark_onboarding_completed(str(user_id))
+
+    assert result is not None
+    assert result.id == user_id
+    assert result.onboarding_completed is True
