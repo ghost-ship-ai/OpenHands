@@ -2042,12 +2042,20 @@ async def test_accept_tos_stores_timezone_naive_datetime(mock_request):
 
     mock_request.json = AsyncMock(return_value={'redirect_url': 'http://example.com'})
 
+    # Mock user for onboarding check (user already completed onboarding)
+    mock_user_for_onboarding = MagicMock()
+    mock_user_for_onboarding.onboarding_completed = True
+
     with (
         patch(
             'server.routes.auth.get_user_auth', AsyncMock(return_value=mock_user_auth)
         ),
         patch('server.routes.auth.a_session_maker', return_value=mock_session_context),
         patch('server.routes.auth.set_response_cookie'),
+        patch(
+            'server.routes.auth.UserStore.get_user_by_id',
+            AsyncMock(return_value=mock_user_for_onboarding),
+        ),
     ):
         # Act
         result = await accept_tos(mock_request)
