@@ -51,12 +51,23 @@ const getActionEventTitle = (event: OpenHandsEvent): React.ReactNode => {
     return "";
   }
 
+  const actionType = event.action.kind;
   const summaryTitle = getSummaryTitleForActionEvent(event);
   if (summaryTitle) {
-    return summaryTitle;
+    // WORKAROUND: Skip raw JSON default summaries for ThinkAction.
+    // SDK generates "think: {\"thought\": ...}" when LLM does not provide summary.
+    // Fall through to "Thinking" translation, but preserve good summaries.
+    // See: https://github.com/OpenHands/OpenHands/issues/13690
+    // TODO: Remove once SDK fix is deployed
+    const isRawJsonDefault =
+      actionType === "ThinkAction" &&
+      typeof summaryTitle === "string" &&
+      summaryTitle.startsWith("think: {");
+    if (!isRawJsonDefault) {
+      return summaryTitle;
+    }
   }
-
-  const actionType = event.action.kind;
+  // Falls through to ACTION_MESSAGE$THINK → "Thinking"
   let actionKey = "";
   let actionValues: Record<string, unknown> = {};
 

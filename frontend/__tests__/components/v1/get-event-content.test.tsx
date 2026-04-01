@@ -145,4 +145,68 @@ describe("getEventContent", () => {
     expect(screen.getByText("Check repository status")).toBeInTheDocument();
     expect(screen.queryByText("$ git status")).not.toBeInTheDocument();
   });
+
+  describe("ThinkAction raw JSON workaround", () => {
+    const createThinkAction = (summary?: string): ActionEvent => ({
+      id: "action-think",
+      timestamp: new Date().toISOString(),
+      source: "agent",
+      thought: [],
+      thinking_blocks: [],
+      action: {
+        kind: "ThinkAction",
+        thought: "Some thought content",
+      },
+      tool_name: "think",
+      tool_call_id: "tool-think",
+      tool_call: {
+        id: "tool-think",
+        type: "function",
+        function: {
+          name: "think",
+          arguments: '{"thought":"Some thought content"}',
+        },
+      },
+      llm_response_id: "response-think",
+      security_risk: SecurityRisk.LOW,
+      summary,
+    });
+
+    it("skips raw JSON default summary for ThinkAction and falls back to translation", () => {
+      // SDK generates this when LLM does not provide a summary
+      const thinkAction = createThinkAction(
+        'think: {"thought": "Some thought content"}',
+      );
+      const { title } = getEventContent(thinkAction);
+
+      render(<span>{title}</span>);
+
+      // Should fall back to the translation key, not show raw JSON
+      expect(screen.getByText("ACTION_MESSAGE$THINK")).toBeInTheDocument();
+      expect(screen.queryByText(/think: \{/)).not.toBeInTheDocument();
+    });
+
+    it("preserves good summaries for ThinkAction", () => {
+      const thinkAction = createThinkAction(
+        "Analyzing the test failure patterns",
+      );
+      const { title } = getEventContent(thinkAction);
+
+      render(<span>{title}</span>);
+
+      // Good summary should be displayed
+      expect(
+        screen.getByText("Analyzing the test failure patterns"),
+      ).toBeInTheDocument();
+    });
+
+    it("uses translation when ThinkAction has no summary", () => {
+      const thinkAction = createThinkAction(undefined);
+      const { title } = getEventContent(thinkAction);
+
+      render(<span>{title}</span>);
+
+      expect(screen.getByText("ACTION_MESSAGE$THINK")).toBeInTheDocument();
+    });
+  });
 });
