@@ -564,13 +564,17 @@ def get_uvicorn_json_log_config() -> dict:
                 'use_colors': None,
             },
             # Actual JSON formatters used by handlers below
+            # rename_fields maps 'levelname' to the configured LOG_JSON_LEVEL_KEY
+            # (defaults to 'level') so Datadog correctly parses the log level
             'json': {
                 '()': 'pythonjsonlogger.json.JsonFormatter',
                 'fmt': '%(message)s %(levelname)s %(name)s %(asctime)s %(exc_info)s',
+                'rename_fields': {'levelname': LOG_JSON_LEVEL_KEY},
             },
             'json_access': {
                 '()': 'pythonjsonlogger.json.JsonFormatter',
                 'fmt': '%(message)s %(levelname)s %(name)s %(asctime)s %(client_addr)s %(request_line)s %(status_code)s',
+                'rename_fields': {'levelname': LOG_JSON_LEVEL_KEY},
             },
         },
         'handlers': {
