@@ -29,9 +29,9 @@ from storage.user_authorization import UserAuthorizationType
 from storage.user_authorization_store import UserAuthorizationStore
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 
-from enterprise.server.routes.user import _check_idp
-from enterprise.storage.user_store import UserStore
-from enterprise.utils.identity import resolve_display_name
+from server.routes.user import _check_idp
+from storage.user_store import UserStore
+from utils.identity import resolve_display_name
 from openhands.app_server.user.user_models import UserMeta
 from openhands.integrations.provider import (
     PROVIDER_TOKEN_TYPE,
