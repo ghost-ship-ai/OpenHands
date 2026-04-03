@@ -19,6 +19,7 @@ from server.auth.token_manager import TokenManager
 from server.config import get_config
 from server.logger import logger
 from server.rate_limit import RateLimiter, create_redis_rate_limiter
+from server.routes.user import _check_idp
 from sqlalchemy import delete, select
 from storage.api_key_store import ApiKeyStore
 from storage.auth_tokens import AuthTokens
@@ -27,11 +28,10 @@ from storage.saas_secrets_store import SaasSecretsStore
 from storage.saas_settings_store import SaasSettingsStore
 from storage.user_authorization import UserAuthorizationType
 from storage.user_authorization_store import UserAuthorizationStore
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
-
-from server.routes.user import _check_idp
 from storage.user_store import UserStore
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 from utils.identity import resolve_display_name
+
 from openhands.app_server.user.user_models import UserMeta
 from openhands.integrations.provider import (
     PROVIDER_TOKEN_TYPE,
