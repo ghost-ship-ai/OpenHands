@@ -4,7 +4,7 @@ from fastapi import Request
 
 from openhands.app_server.errors import OpenHandsError
 from openhands.app_server.user.user_context import UserContext
-from openhands.app_server.user.user_models import UserInfo
+from openhands.app_server.user.user_models import UserInfo, UserMeta
 from openhands.integrations.provider import PROVIDER_TOKEN_TYPE, ProviderType
 from openhands.sdk.secret import SecretSource
 
@@ -19,6 +19,9 @@ class SpecifyUserContext(UserContext):
         return self.user_id
 
     async def get_user_info(self) -> UserInfo:
+        raise NotImplementedError()
+
+    async def get_user_meta(self) -> UserMeta:
         raise NotImplementedError()
 
     async def get_authenticated_git_url(

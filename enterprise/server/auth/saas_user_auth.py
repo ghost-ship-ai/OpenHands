@@ -29,6 +29,7 @@ from storage.user_authorization import UserAuthorizationType
 from storage.user_authorization_store import UserAuthorizationStore
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 
+from openhands.app_server.user.user_models import UserMeta
 from openhands.integrations.provider import (
     PROVIDER_TOKEN_TYPE,
     ProviderToken,
@@ -241,6 +242,105 @@ class SaasUserAuth(UserAuth):
                 self.user_id, 'MCP_API_KEY', None
             )
         return mcp_api_key
+
+    async def get_user_meta(self) -> UserMeta:
+        """Get user metadata from the git provider.
+
+        If no provider tokens are available, constructs user metadata from Keycloak claims.
+        Otherwise, delegates to the git provider.
+        """
+        from openhands.integrations.service_types import User
+        from openhands.server.routes.user import (
+            UserStore,
+            _check_idp,
+            resolve_display_name,
+        )
+
+        provider_tokens = await self.get_provider_tokens()
+        if not provider_tokens:
+            # No provider tokens - construct from Keycloak claims
+            access_token = await self.get_access_token()
+            if not access_token:
+                from openhands.integrations.service_types import AuthenticationError
+                raise AuthenticationError('User is not authenticated.')
+
+            user_info = await token_manager.get_user_info(
+                access_token.get_secret_value()
+            )
+            # Prefer email from DB; fall back to Keycloak if not yet persisted
+            email = user_info.email
+            sub = user_info.sub
+            if sub:
+                db_user = await UserStore.get_user_by_id(sub)
+                if db_user and db_user.email is not None:
+                    email = db_user.email
+
+            user_info_dict = user_info.model_dump(exclude_none=True)
+            # Check IDP and get final User object
+            user = await _check_idp(
+                access_token=access_token,
+                default_value=User(
+                    id=sub,
+                    login=user_info.preferred_username or '',
+                    avatar_url='',
+                    email=email,
+                    name=resolve_display_name(user_info_dict),
+                    company=user_info.company,
+                ),
+                user_info=user_info_dict,
+            )
+            if user is None:
+                # _check_idp returned None means use the default_value
+                user = User(
+                    id=sub,
+                    login=user_info.preferred_username or '',
+                    avatar_url='',
+                    email=email,
+                    name=resolve_display_name(user_info_dict),
+                    company=user_info.company,
+                )
+
+            return UserMeta(
+                id=user.id,
+                login=user.login,
+                avatar_url=user.avatar_url,
+                company=user.company,
+                name=user.name,
+                email=user.email,
+            )
+
+        # Have provider tokens - get from provider
+        from openhands.integrations.provider import ProviderHandler, ProviderType
+        from openhands.integrations.service_types import AuthenticationError
+        from openhands.core.logger import openhands_logger as logger
+
+        provider_handler = ProviderHandler(
+            provider_tokens=provider_tokens, external_auth_id=self.user_id
+        )
+        exceptions: list[tuple[ProviderType, Exception]] = []
+        for provider in provider_tokens:
+            try:
+                service = provider_handler.get_service(provider)
+                user = await service.get_user()
+                return UserMeta(
+                    id=user.id,
+                    login=user.login,
+                    avatar_url=user.avatar_url,
+                    company=user.company,
+                    name=user.name,
+                    email=user.email,
+                )
+            except Exception as e:
+                exceptions.append((provider, e))
+                continue
+
+        # If we get here, all providers failed
+        for provider, exc in exceptions:
+            logger.warning(
+                f'Failed to get user from provider {provider}: {exc}',
+                exc_info=(type(exc), exc, exc.__traceback__),
+            )
+        raise AuthenticationError('Need valid provider token')
 
     @classmethod
     async def get_instance(cls, request: Request) -> UserAuth:

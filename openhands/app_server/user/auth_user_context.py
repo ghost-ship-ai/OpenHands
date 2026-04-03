@@ -8,7 +8,7 @@ from openhands.app_server.errors import AuthError
 from openhands.app_server.services.injector import InjectorState
 from openhands.app_server.user.specifiy_user_context import USER_CONTEXT_ATTR
 from openhands.app_server.user.user_context import UserContext, UserContextInjector
-from openhands.app_server.user.user_models import UserInfo
+from openhands.app_server.user.user_models import UserInfo, UserMeta
 from openhands.integrations.provider import (
     PROVIDER_TOKEN_TYPE,
     ProviderHandler,
@@ -47,6 +47,10 @@ class AuthUserContext(UserContext):
             )
             self._user_info = user_info
         return user_info
+
+    async def get_user_meta(self) -> UserMeta:
+        """Get user metadata from the git provider."""
+        return await self.user_auth.get_user_meta()
 
     async def get_provider_tokens(
         self, as_env_vars: bool = False

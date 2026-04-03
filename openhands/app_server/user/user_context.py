@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from openhands.app_server.services.injector import Injector
 from openhands.app_server.user.user_models import (
     UserInfo,
+    UserMeta,
 )
 from openhands.integrations.provider import PROVIDER_TOKEN_TYPE, ProviderType
 from openhands.sdk.secret import SecretSource
@@ -21,6 +22,10 @@ class UserContext(ABC):
     @abstractmethod
     async def get_user_info(self) -> UserInfo:
         """Get the user info."""
+
+    @abstractmethod
+    async def get_user_meta(self) -> UserMeta:
+        """Get user metadata from the git provider."""
 
     @abstractmethod
     async def get_authenticated_git_url(

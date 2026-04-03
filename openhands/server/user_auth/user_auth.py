@@ -14,6 +14,7 @@ from enum import Enum
 from fastapi import Request
 from pydantic import SecretStr
 
+from openhands.app_server.user.user_models import UserMeta
 from openhands.integrations.provider import PROVIDER_TOKEN_TYPE
 from openhands.server.settings import Settings
 from openhands.server.shared import server_config
@@ -86,6 +87,10 @@ class UserAuth(ABC):
     @abstractmethod
     async def get_mcp_api_key(self) -> str | None:
         """Get an mcp api key for the user"""
+
+    @abstractmethod
+    async def get_user_meta(self) -> UserMeta:
+        """Get user metadata from the git provider."""
 
     @classmethod
     @abstractmethod

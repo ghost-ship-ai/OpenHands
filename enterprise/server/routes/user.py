@@ -146,12 +146,18 @@ async def saas_get_user_repositories(
     )
 
 
-@saas_user_router.get('/info', response_model=User)
+@saas_user_router.get('/info', response_model=User, deprecated=True)
 async def saas_get_user(
     provider_tokens: PROVIDER_TOKEN_TYPE | None = Depends(get_provider_tokens),
     access_token: SecretStr | None = Depends(get_access_token),
     user_id: str | None = Depends(get_user_id),
 ) -> User | JSONResponse:
+    """Get the authenticated user's information.
+
+    .. deprecated::
+        This endpoint is deprecated. Use the V1 endpoint /users/me instead,
+        which returns a UserMeta object from openhands.app_server.user.user_models.
+    """
     if not provider_tokens:
         if not access_token:
             return JSONResponse(

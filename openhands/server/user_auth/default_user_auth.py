@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from fastapi import Request
 from pydantic import SecretStr
 
+from openhands.app_server.user.user_models import UserMeta
 from openhands.integrations.provider import PROVIDER_TOKEN_TYPE
 from openhands.server import shared
 from openhands.server.settings import Settings
@@ -98,6 +99,46 @@ class DefaultUserAuth(UserAuth):
 
     async def get_mcp_api_key(self) -> str | None:
         return None
+
+    async def get_user_meta(self) -> UserMeta:
+        """Get user metadata from the git provider.
+
+        Returns user information from the first available provider.
+        Uses the same logic as the get_user method in ProviderHandler.
+        """
+        from openhands.integrations.provider import ProviderHandler, ProviderType
+        from openhands.integrations.service_types import AuthenticationError
+        from openhands.core.logger import openhands_logger as logger
+
+        provider_tokens = await self.get_provider_tokens()
+        if not provider_tokens:
+            raise AuthenticationError('Need valid provider token')
+
+        provider_handler = ProviderHandler(provider_tokens=provider_tokens)
+        exceptions: list[tuple[ProviderType, Exception]] = []
+        for provider in provider_tokens:
+            try:
+                service = provider_handler.get_service(provider)
+                user = await service.get_user()
+                return UserMeta(
+                    id=user.id,
+                    login=user.login,
+                    avatar_url=user.avatar_url,
+                    company=user.company,
+                    name=user.name,
+                    email=user.email,
+                )
+            except Exception as e:
+                exceptions.append((provider, e))
+                continue
+
+        # If we get here, all providers failed
+        for provider, exc in exceptions:
+            logger.warning(
+                f'Failed to get user from provider {provider}: {exc}',
+                exc_info=(type(exc), exc, exc.__traceback__),
+            )
+        raise AuthenticationError('Need valid provider token')
 
     @classmethod
     async def get_instance(cls, request: Request) -> UserAuth:

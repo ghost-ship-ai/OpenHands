@@ -127,6 +127,12 @@ class CreateMicroagent(BaseModel):
 
 
 class User(BaseModel):
+    """Model for user information from git provider.
+
+    Note: This class is kept for backwards compatibility with the GitService Protocol.
+    For V1 API, use UserMeta from openhands.app_server.user.user_models instead.
+    """
+
     id: str
     login: str
     avatar_url: str
