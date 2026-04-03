@@ -106,9 +106,9 @@ class DefaultUserAuth(UserAuth):
         Returns user information from the first available provider.
         Uses the same logic as the get_user method in ProviderHandler.
         """
+        from openhands.core.logger import openhands_logger as logger
         from openhands.integrations.provider import ProviderHandler, ProviderType
         from openhands.integrations.service_types import AuthenticationError
-        from openhands.core.logger import openhands_logger as logger
 
         provider_tokens = await self.get_provider_tokens()
         if not provider_tokens:

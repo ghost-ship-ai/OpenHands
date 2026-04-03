@@ -262,6 +262,7 @@ class SaasUserAuth(UserAuth):
             access_token = await self.get_access_token()
             if not access_token:
                 from openhands.integrations.service_types import AuthenticationError
+
                 raise AuthenticationError('User is not authenticated.')
 
             user_info = await token_manager.get_user_info(
@@ -310,9 +311,9 @@ class SaasUserAuth(UserAuth):
             )
 
         # Have provider tokens - get from provider
+        from openhands.core.logger import openhands_logger as logger
         from openhands.integrations.provider import ProviderHandler, ProviderType
         from openhands.integrations.service_types import AuthenticationError
-        from openhands.core.logger import openhands_logger as logger
 
         provider_handler = ProviderHandler(
             provider_tokens=provider_tokens, external_auth_id=self.user_id

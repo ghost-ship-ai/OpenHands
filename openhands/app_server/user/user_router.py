@@ -3,7 +3,6 @@
 import logging
 
 from fastapi import APIRouter, Header, HTTPException, Query, status
-from fastapi.responses import JSONResponse
 
 from openhands.app_server.config import depends_user_context
 from openhands.app_server.sandbox.session_auth import validate_session_key
