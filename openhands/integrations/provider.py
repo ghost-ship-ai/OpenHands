@@ -14,6 +14,7 @@ from pydantic import (
     SecretStr,
 )
 
+from openhands.app_server.user.user_models import UserMeta
 from openhands.core.logger import openhands_logger as logger
 from openhands.events.action.action import Action
 from openhands.events.action.commands import CmdRunAction
@@ -41,7 +42,6 @@ from openhands.integrations.service_types import (
     ResourceNotFoundError,
     SuggestedTask,
     TokenResponse,
-    User,
 )
 from openhands.microagent.types import MicroagentContentResponse, MicroagentResponse
 from openhands.server.types import AppMode
@@ -166,7 +166,7 @@ class ProviderHandler:
             base_domain=token.host,
         )
 
-    async def get_user(self) -> User:
+    async def get_user(self) -> UserMeta:
         """Get user information from the first available provider"""
         exceptions: list[tuple[ProviderType, Exception]] = []
         for provider in self.provider_tokens:

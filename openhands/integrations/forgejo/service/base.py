@@ -5,6 +5,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 import httpx
+from openhands.app_server.user.user_models import UserMeta
 from pydantic import SecretStr
 
 from openhands.core.logger import openhands_logger as logger
@@ -16,7 +17,6 @@ from openhands.integrations.service_types import (
     Repository,
     RequestMethod,
     UnknownException,
-    User,
 )
 from openhands.utils.http_session import httpx_verify_option
 
@@ -154,11 +154,11 @@ class ForgejoMixinBase(BaseGitService, HTTPClient):
 
         return self.DEFAULT_BASE_URL
 
-    async def get_user(self) -> User:  # type: ignore[override]
+    async def get_user(self) -> UserMeta:  # type: ignore[override]
         url = f'{self.BASE_URL}/user'
         response, _ = await self._make_request(url)
 
-        return User(
+        return UserMeta(
             id=str(response.get('id', '')),
             login=response.get('username', ''),
             avatar_url=response.get('avatar_url', ''),

@@ -1,5 +1,6 @@
 """Feature operations for Azure DevOps integration (microagents, suggested tasks, user)."""
 
+from openhands.app_server.user.user_models import UserMeta
 from openhands.core.logger import openhands_logger as logger
 from openhands.integrations.azure_devops.service.base import AzureDevOpsMixinBase
 from openhands.integrations.service_types import (
@@ -8,14 +9,13 @@ from openhands.integrations.service_types import (
     RequestMethod,
     SuggestedTask,
     TaskType,
-    User,
 )
 
 
 class AzureDevOpsFeaturesMixin(AzureDevOpsMixinBase):
     """Mixin for Azure DevOps feature operations (microagents, suggested tasks, user info)."""
 
-    async def get_user(self) -> User:
+    async def get_user(self) -> UserMeta:
         """Get the authenticated user's information."""
         url = f'{self.base_url}/_apis/connectionData?api-version=7.1-preview.1'
         response, _ = await self._make_request(url)
@@ -28,7 +28,7 @@ class AzureDevOpsFeaturesMixin(AzureDevOpsMixinBase):
         # Get descriptor for potential additional details
         authenticated_user.get('descriptor', '')
 
-        return User(
+        return UserMeta(
             id=str(user_id),
             login=display_name,
             avatar_url='',

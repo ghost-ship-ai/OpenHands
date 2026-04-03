@@ -2,6 +2,7 @@ import base64
 from typing import Any
 
 import httpx
+from openhands.app_server.user.user_models import UserMeta
 from pydantic import SecretStr
 
 from openhands.core.logger import openhands_logger as logger
@@ -13,7 +14,6 @@ from openhands.integrations.service_types import (
     Repository,
     RequestMethod,
     ResourceNotFoundError,
-    User,
 )
 from openhands.utils.http_session import httpx_verify_option
 
@@ -161,7 +161,7 @@ class BitBucketMixinBase(BaseGitService, HTTPClient):
         response, _ = await self._make_request(url)
         return response.get('values', [])
 
-    async def get_user(self) -> User:
+    async def get_user(self) -> UserMeta:
         """Get the authenticated user's information."""
         url = f'{self.BASE_URL}/user'
         data, _ = await self._make_request(url)
@@ -178,7 +178,7 @@ class BitBucketMixinBase(BaseGitService, HTTPClient):
                 exc_info=True,
             )
 
-        return User(
+        return UserMeta(
             id=account_id,
             login=data.get('username', ''),
             avatar_url=data.get('links', {}).get('avatar', {}).get('href', ''),

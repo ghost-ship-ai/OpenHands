@@ -11,6 +11,7 @@ from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import JSONResponse
+from openhands.app_server.user.user_models import UserMeta
 from pydantic import SecretStr
 
 from openhands.app_server.utils.dependencies import get_dependencies
@@ -27,7 +28,6 @@ from openhands.integrations.service_types import (
     Repository,
     SuggestedTask,
     UnknownException,
-    User,
 )
 from openhands.microagent.types import (
     MicroagentContentResponse,
@@ -113,12 +113,12 @@ async def get_user_repositories(
     raise AuthenticationError('Git provider token required. (such as GitHub).')
 
 
-@app.get('/info', response_model=User, deprecated=True)
+@app.get('/info', response_model=UserMeta, deprecated=True)
 async def get_user(
     provider_tokens: PROVIDER_TOKEN_TYPE | None = Depends(get_provider_tokens),
     access_token: SecretStr | None = Depends(get_access_token),
     user_id: str | None = Depends(get_user_id),
-) -> User | JSONResponse:
+) -> UserMeta | JSONResponse:
     """Get the authenticated user's information.
 
     .. deprecated::
@@ -131,7 +131,7 @@ async def get_user(
         )
 
         try:
-            user: User = await client.get_user()
+            user: UserMeta = await client.get_user()
             return user
 
         except UnknownException as e:

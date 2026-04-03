@@ -1,6 +1,7 @@
 from typing import Any
 
 import httpx
+from openhands.app_server.user.user_models import UserMeta
 from pydantic import SecretStr
 
 from openhands.integrations.protocols.http_client import HTTPClient
@@ -8,7 +9,6 @@ from openhands.integrations.service_types import (
     BaseGitService,
     RequestMethod,
     UnknownException,
-    User,
 )
 from openhands.utils.http_session import httpx_verify_option
 
@@ -138,7 +138,7 @@ class GitLabMixinBase(BaseGitService, HTTPClient):
         except httpx.HTTPError as e:
             raise self.handle_http_error(e)
 
-    async def get_user(self) -> User:
+    async def get_user(self) -> UserMeta:
         url = f'{self.BASE_URL}/user'
         response, _ = await self._make_request(url)
 
@@ -146,7 +146,7 @@ class GitLabMixinBase(BaseGitService, HTTPClient):
         # In some self-hosted GitLab instances, the avatar_url field may be returned as None.
         avatar_url = response.get('avatar_url') or ''
 
-        return User(
+        return UserMeta(
             id=str(response.get('id', '')),
             login=response.get('username'),  # type: ignore[call-arg]
             avatar_url=avatar_url,

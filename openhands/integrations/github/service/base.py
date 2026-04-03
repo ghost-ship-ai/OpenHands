@@ -2,6 +2,7 @@ import json
 from typing import Any, cast
 
 import httpx
+from openhands.app_server.user.user_models import UserMeta
 from pydantic import SecretStr
 
 from openhands.core.logger import openhands_logger as logger
@@ -10,7 +11,6 @@ from openhands.integrations.service_types import (
     BaseGitService,
     RequestMethod,
     UnknownException,
-    User,
 )
 from openhands.utils.http_session import httpx_verify_option
 
@@ -152,7 +152,7 @@ class GitHubMixinBase(BaseGitService, HTTPClient):
                     exc_info=True,
                 )
 
-        return User(
+        return UserMeta(
             id=str(response.get('id', '')),
             login=cast(str, response.get('login') or ''),
             avatar_url=cast(str, response.get('avatar_url') or ''),

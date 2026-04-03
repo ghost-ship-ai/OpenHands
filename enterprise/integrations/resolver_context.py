@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from openhands.app_server.user.user_context import UserContext
-from openhands.app_server.user.user_models import UserInfo
+from openhands.app_server.user.user_models import UserInfo, UserMeta
 from openhands.integrations.provider import PROVIDER_TOKEN_TYPE, ProviderHandler
 from openhands.integrations.service_types import ProviderType
 from openhands.sdk.secret import SecretSource, StaticSecret
@@ -63,6 +63,10 @@ class ResolverUserContext(UserContext):
             if provider_token and provider_token.token:
                 return provider_token.token.get_secret_value()
         return None
+
+    async def get_user_meta(self) -> UserMeta:
+        """Get user metadata from the git provider."""
+        return await self.saas_user_auth.get_user_meta()
 
     async def get_provider_tokens(
         self, as_env_vars: bool = False

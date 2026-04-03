@@ -7,6 +7,7 @@ from typing import Any, Protocol
 from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel, SecretStr
 
+from openhands.app_server.user.user_models import UserMeta
 from openhands.core.logger import openhands_logger as logger
 from openhands.microagent.microagent import BaseMicroagent
 from openhands.microagent.types import MicroagentContentResponse, MicroagentResponse
@@ -124,21 +125,6 @@ class CreateMicroagent(BaseModel):
     repo: str
     git_provider: ProviderType | None = None
     title: str | None = None
-
-
-class User(BaseModel):
-    """Model for user information from git provider.
-
-    Note: This class is kept for backwards compatibility with the GitService Protocol.
-    For V1 API, use UserMeta from openhands.app_server.user.user_models instead.
-    """
-
-    id: str
-    login: str
-    avatar_url: str
-    company: str | None = None
-    name: str | None = None
-    email: str | None = None
 
 
 class Branch(BaseModel):
@@ -478,7 +464,7 @@ class GitService(Protocol):
         """Get latest working token of the user"""
         ...
 
-    async def get_user(self) -> User:
+    async def get_user(self) -> UserMeta:
         """Get the authenticated user's information"""
         ...
 
