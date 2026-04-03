@@ -7,6 +7,7 @@ from server.auth.token_manager import TokenManager
 from storage.user_store import UserStore
 from utils.identity import resolve_display_name
 
+from openhands.app_server.user.user_models import UserMeta
 from openhands.app_server.utils.dependencies import get_dependencies
 from openhands.integrations.provider import (
     PROVIDER_TOKEN_TYPE,
@@ -18,7 +19,6 @@ from openhands.integrations.service_types import (
     ProviderType,
     Repository,
     SuggestedTask,
-    User,
 )
 from openhands.microagent.types import (
     MicroagentContentResponse,
@@ -146,12 +146,12 @@ async def saas_get_user_repositories(
     )
 
 
-@saas_user_router.get('/info', response_model=User, deprecated=True)
+@saas_user_router.get('/info', deprecated=True)
 async def saas_get_user(
     provider_tokens: PROVIDER_TOKEN_TYPE | None = Depends(get_provider_tokens),
     access_token: SecretStr | None = Depends(get_access_token),
     user_id: str | None = Depends(get_user_id),
-) -> User | JSONResponse:
+) -> UserMeta | JSONResponse:
     """Get the authenticated user's information.
 
     .. deprecated::
@@ -176,7 +176,7 @@ async def saas_get_user(
         user_info_dict = user_info.model_dump(exclude_none=True)
         retval = await _check_idp(
             access_token=access_token,
-            default_value=User(
+            default_value=UserMeta(
                 id=sub,
                 login=user_info.preferred_username or '',
                 avatar_url='',
