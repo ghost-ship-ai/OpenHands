@@ -29,12 +29,16 @@ from storage.user_authorization import UserAuthorizationType
 from storage.user_authorization_store import UserAuthorizationStore
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 
+from enterprise.server.routes.user import _check_idp
+from enterprise.storage.user_store import UserStore
+from enterprise.utils.identity import resolve_display_name
 from openhands.app_server.user.user_models import UserMeta
 from openhands.integrations.provider import (
     PROVIDER_TOKEN_TYPE,
     ProviderToken,
     ProviderType,
 )
+from openhands.integrations.service_types import UserMeta
 from openhands.server.settings import Settings
 from openhands.server.user_auth.user_auth import AuthType, UserAuth
 from openhands.storage.data_models.secrets import Secrets
@@ -249,12 +253,6 @@ class SaasUserAuth(UserAuth):
         If no provider tokens are available, constructs user metadata from Keycloak claims.
         Otherwise, delegates to the git provider.
         """
-        from openhands.integrations.service_types import User
-        from openhands.server.routes.user import (
-            UserStore,
-            _check_idp,
-            resolve_display_name,
-        )
 
         provider_tokens = await self.get_provider_tokens()
         if not provider_tokens:
@@ -280,7 +278,7 @@ class SaasUserAuth(UserAuth):
             # Check IDP and get final User object
             user = await _check_idp(
                 access_token=access_token,
-                default_value=User(
+                default_value=UserMeta(
                     id=sub,
                     login=user_info.preferred_username or '',
                     avatar_url='',
@@ -292,7 +290,7 @@ class SaasUserAuth(UserAuth):
             )
             if user is None:
                 # _check_idp returned None means use the default_value
-                user = User(
+                user = UserMeta(
                     id=sub,
                     login=user_info.preferred_username or '',
                     avatar_url='',
