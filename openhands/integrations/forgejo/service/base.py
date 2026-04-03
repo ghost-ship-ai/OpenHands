@@ -5,9 +5,9 @@ from typing import Any
 from urllib.parse import urlparse
 
 import httpx
-from openhands.app_server.user.user_models import UserMeta
 from pydantic import SecretStr
 
+from openhands.app_server.user.user_models import UserMeta
 from openhands.core.logger import openhands_logger as logger
 from openhands.integrations.protocols.http_client import HTTPClient
 from openhands.integrations.service_types import (

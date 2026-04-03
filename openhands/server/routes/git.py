@@ -11,9 +11,9 @@ from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import JSONResponse
-from openhands.app_server.user.user_models import UserMeta
 from pydantic import SecretStr
 
+from openhands.app_server.user.user_models import UserMeta
 from openhands.app_server.utils.dependencies import get_dependencies
 from openhands.core.logger import openhands_logger as logger
 from openhands.integrations.provider import (
