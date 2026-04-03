@@ -1,7 +1,11 @@
+from typing import TYPE_CHECKING
+
 from pydantic import BaseModel
 
-from openhands.integrations.provider import PROVIDER_TOKEN_TYPE
 from openhands.storage.data_models.settings import Settings
+
+if TYPE_CHECKING:
+    from openhands.integrations.provider import PROVIDER_TOKEN_TYPE
 
 
 class UserMeta(BaseModel):
