@@ -7,7 +7,7 @@ from fastapi import APIRouter, Header, HTTPException, Query, status
 from openhands.app_server.config import depends_user_context
 from openhands.app_server.sandbox.session_auth import validate_session_key
 from openhands.app_server.user.user_context import UserContext
-from openhands.app_server.user.user_models import UserMeta
+from openhands.app_server.user.user_models import UserInfo, UserMeta
 from openhands.app_server.utils.dependencies import get_dependencies
 
 _logger = logging.getLogger(__name__)
@@ -30,8 +30,29 @@ async def get_current_user(
         'owned by the authenticated user.',
     ),
     x_session_api_key: str | None = Header(default=None),
+) -> UserInfo:
+    """Get the current authenticated user.
+
+    .. deprecated::
+        This endpoint is deprecated. Use /users/current-user-meta instead,
+        which returns a UserMeta object from openhands.app_server.user.user_models.
+    """
+    user = await user_context.get_user_info()
+    if user is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail='Not authenticated')
+    if expose_secrets:
+        await _validate_session_key_ownership(user_context, x_session_api_key)
+        return JSONResponse(  # type: ignore[return-value]
+            content=user.model_dump(mode='json', context={'expose_secrets': True})
+        )
+    return user
+
+
+@router.get('/current-user-meta')
+async def get_current_user_meta(
+    user_context: UserContext = user_dependency,
 ) -> UserMeta:
-    """Get the current authenticated user."""
+    """Get the current authenticated user's metadata from the git provider."""
     user = await user_context.get_user_meta()
     if user is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail='Not authenticated')

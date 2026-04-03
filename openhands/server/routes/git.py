@@ -122,7 +122,7 @@ async def get_user(
     """Get the authenticated user's information.
 
     .. deprecated::
-        This endpoint is deprecated. Use the V1 endpoint /users/me instead,
+        This endpoint is deprecated. Use the V1 endpoint /users/current-user-meta instead,
         which returns a UserMeta object from openhands.app_server.user.user_models.
     """
     if provider_tokens:
