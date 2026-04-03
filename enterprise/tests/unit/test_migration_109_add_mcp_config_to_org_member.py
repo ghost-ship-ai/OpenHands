@@ -6,12 +6,12 @@ MIGRATION_PATH = (
     Path(__file__).resolve().parents[2]
     / 'migrations'
     / 'versions'
-    / '104_add_mcp_config_to_org_member.py'
+    / '109_add_mcp_config_to_org_member.py'
 )
 
 
 spec = spec_from_file_location(
-    'migration_104_add_mcp_config_to_org_member', MIGRATION_PATH
+    'migration_109_add_mcp_config_to_org_member', MIGRATION_PATH
 )
 assert spec is not None and spec.loader is not None
 migration = module_from_spec(spec)

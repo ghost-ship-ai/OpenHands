@@ -20,6 +20,8 @@ describe("SettingsForm", () => {
           models={[
             String(getAgentSettingValue(DEFAULT_SETTINGS, "llm.model") ?? ""),
           ]}
+          verifiedModels={[]}
+          verifiedProviders={["openhands"]}
           onClose={onCloseMock}
         />
       ),

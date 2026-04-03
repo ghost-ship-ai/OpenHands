@@ -7,13 +7,12 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
 
+from openhands.app_server.errors import AuthError
+from openhands.app_server.secrets.secrets_router import check_provider_tokens
 from openhands.integrations.provider import ProviderToken
 from openhands.integrations.service_types import ProviderType
 from openhands.server.routes.secrets import (
     app as secrets_router,
-)
-from openhands.server.routes.secrets import (
-    check_provider_tokens,
 )
 from openhands.server.routes.settings import _apply_settings_payload
 from openhands.server.settings import POSTProviderModel
@@ -89,10 +88,10 @@ def test_client():
 
     with (
         patch.dict(os.environ, {'SESSION_API_KEY': ''}, clear=False),
-        patch('openhands.server.dependencies._SESSION_API_KEY', None),
+        patch('openhands.app_server.utils.dependencies._SESSION_API_KEY', None),
         patch(
-            'openhands.server.routes.secrets.check_provider_tokens',
-            AsyncMock(return_value=''),
+            'openhands.app_server.secrets.secrets_router.check_provider_tokens',
+            AsyncMock(return_value=None),
         ),
     ):
         client = TestClient(test_app)
@@ -127,14 +126,11 @@ async def test_check_provider_tokens_valid():
 
     # Mock the validate_provider_token function to return GITHUB for valid tokens
     with patch(
-        'openhands.server.routes.secrets.validate_provider_token'
+        'openhands.app_server.secrets.secrets_router.validate_provider_token'
     ) as mock_validate:
         mock_validate.return_value = ProviderType.GITHUB
 
-        result = await check_provider_tokens(providers, existing_provider_tokens)
-
-        # Should return empty string for valid token
-        assert result == ''
+        await check_provider_tokens(providers, existing_provider_tokens)
         mock_validate.assert_called_once()
 
 
@@ -149,14 +145,13 @@ async def test_check_provider_tokens_invalid():
 
     # Mock the validate_provider_token function to return None for invalid tokens
     with patch(
-        'openhands.server.routes.secrets.validate_provider_token'
+        'openhands.app_server.secrets.secrets_router.validate_provider_token'
     ) as mock_validate:
         mock_validate.return_value = None
 
-        result = await check_provider_tokens(providers, existing_provider_tokens)
+        with pytest.raises(AuthError):
+            await check_provider_tokens(providers, existing_provider_tokens)
 
-        # Should return error message for invalid token
-        assert 'Invalid token' in result
         mock_validate.assert_called_once()
 
 
@@ -166,8 +161,7 @@ async def test_check_provider_tokens_wrong_type():
     providers = POSTProviderModel(provider_tokens={})
     existing_provider_tokens = {}
 
-    result = await check_provider_tokens(providers, existing_provider_tokens)
-    assert result == ''
+    await check_provider_tokens(providers, existing_provider_tokens)
 
 
 @pytest.mark.asyncio
@@ -176,8 +170,7 @@ async def test_check_provider_tokens_no_tokens():
     providers = POSTProviderModel(provider_tokens={})
     existing_provider_tokens = {}
 
-    result = await check_provider_tokens(providers, existing_provider_tokens)
-    assert result == ''
+    await check_provider_tokens(providers, existing_provider_tokens)
 
 
 # Tests for _apply_settings_payload (SDK-first settings)

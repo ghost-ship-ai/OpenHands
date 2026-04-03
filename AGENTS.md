@@ -212,6 +212,7 @@ Enterprise uses Alembic for database migrations. When making schema changes:
 1. Create migration files in `enterprise/migrations/versions/`
 2. Test migrations thoroughly
 3. The CI will check for migration conflicts on PRs
+4. Enterprise migrations use sequential integer revisions; if main has added newer migrations since your branch diverged, restore those main migration files and renumber your PR's migration chain above the latest existing revision to avoid duplicate Alembic revision IDs.
 
 **Integration Development:**
 The enterprise codebase includes integrations for:

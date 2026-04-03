@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from pydantic import SecretStr
 
+from openhands.app_server.settings.settings_router import convert_to_settings
 from openhands.core.config.llm_config import LLMConfig
 from openhands.core.config.mcp_config import MCPConfig as LegacyMCPConfig
 from openhands.core.config.openhands_config import OpenHandsConfig

@@ -69,7 +69,7 @@ def test_client():
             {'SESSION_API_KEY': '', 'ALLOW_SHORT_CONTEXT_WINDOWS': 'true'},
             clear=False,
         ),
-        patch('openhands.server.dependencies._SESSION_API_KEY', None),
+        patch('openhands.app_server.utils.dependencies._SESSION_API_KEY', None),
         patch(
             'openhands.server.user_auth.user_auth.UserAuth.get_instance',
             return_value=MockUserAuth(),

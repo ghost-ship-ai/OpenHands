@@ -107,6 +107,9 @@ function LlmSettingsScreen() {
     () => organizeModelsAndProviders(resources?.models || []),
     [resources?.models],
   );
+  const verifiedModels = resources?.verifiedModels || [];
+  const verifiedProviders = resources?.verifiedProviders || [];
+  const defaultModel = resources?.defaultModel || DEFAULT_OPENHANDS_MODEL;
 
   const isSaasMode = config?.app_mode === "saas";
   const isAdminOrOwner = me?.role === "admin" || me?.role === "owner";
@@ -244,6 +247,8 @@ function LlmSettingsScreen() {
             >
               <ModelSelector
                 models={modelsAndProviders}
+                verifiedModels={verifiedModels}
+                verifiedProviders={verifiedProviders}
                 currentModel={modelValue || undefined}
                 onChange={(provider, model) => {
                   setSelectedProvider(provider);
@@ -276,6 +281,7 @@ function LlmSettingsScreen() {
                 type="text"
                 className="w-full"
                 value={modelValue}
+                placeholder={defaultModel}
                 onChange={(value) => onChange("llm.model", value)}
                 isDisabled={isDisabled}
               />
@@ -365,6 +371,9 @@ function LlmSettingsScreen() {
       isSaasMode,
       isV1Enabled,
       modelsAndProviders,
+      verifiedModels,
+      verifiedProviders,
+      defaultModel,
       resources?.agents,
       searchApiKey,
       selectedProvider,

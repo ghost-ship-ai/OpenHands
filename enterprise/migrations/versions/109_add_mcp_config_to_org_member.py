@@ -1,7 +1,7 @@
 """Add mcp_config to org_member for user-specific MCP settings.
 
-Revision ID: 104
-Revises: 103
+Revision ID: 109
+Revises: 108
 Create Date: 2026-03-26
 
 """
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = '104'
-down_revision: Union[str, None] = '103'
+revision: str = '109'
+down_revision: Union[str, None] = '108'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

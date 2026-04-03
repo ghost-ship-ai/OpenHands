@@ -19,10 +19,18 @@ import { SETTINGS_FORM } from "#/utils/constants";
 interface SettingsFormProps {
   settings: Settings;
   models: string[];
+  verifiedModels: string[];
+  verifiedProviders: string[];
   onClose: () => void;
 }
 
-export function SettingsForm({ settings, models, onClose }: SettingsFormProps) {
+export function SettingsForm({
+  settings,
+  models,
+  verifiedModels,
+  verifiedProviders,
+  onClose,
+}: SettingsFormProps) {
   const posthog = usePostHog();
   const { mutate: saveUserSettings } = useSaveSettings();
 
@@ -82,6 +90,8 @@ export function SettingsForm({ settings, models, onClose }: SettingsFormProps) {
         <div className="flex flex-col gap-[17px]">
           <ModelSelector
             models={organizeModelsAndProviders(models)}
+            verifiedModels={verifiedModels}
+            verifiedProviders={verifiedProviders}
             currentModel={
               typeof currentModel === "string" ? currentModel : undefined
             }

@@ -16,8 +16,8 @@ from openhands.integrations.provider import (
     PROVIDER_TOKEN_TYPE,
     ProviderType,
 )
+from openhands.app_server.utils.dependencies import get_dependencies
 from openhands.sdk.settings import AgentSettings
-from openhands.server.dependencies import get_dependencies
 from openhands.server.routes.secrets import invalidate_legacy_secrets_store
 from openhands.server.settings import (
     GETSettingsModel,
@@ -120,6 +120,12 @@ def _apply_settings_payload(
 app = APIRouter(prefix='/api', dependencies=get_dependencies())
 
 
+@app.get('/settings/schema', deprecated=True)
+async def load_settings_schema() -> dict[str, Any]:
+    return _get_agent_settings_schema()
+
+
+
 @app.get(
     '/settings',
     response_model=GETSettingsModel,
@@ -127,6 +133,7 @@ app = APIRouter(prefix='/api', dependencies=get_dependencies())
         404: {'description': 'Settings not found', 'model': dict},
         401: {'description': 'Invalid token', 'model': dict},
     },
+    deprecated=True,
 )
 async def load_settings(
     provider_tokens: PROVIDER_TOKEN_TYPE | None = Depends(get_provider_tokens),
@@ -169,6 +176,7 @@ async def load_settings(
         )
 
         # Redact secrets from the response.
+        settings_with_token_data.llm_api_key = None
         settings_with_token_data.search_api_key = None
         settings_with_token_data.sandbox_api_key = None
         return settings_with_token_data
@@ -195,6 +203,7 @@ async def load_settings(
         200: {'description': 'Settings stored successfully', 'model': dict},
         500: {'description': 'Error storing settings', 'model': dict},
     },
+    deprecated=True,
 )
 async def store_settings(
     payload: dict[str, Any],
