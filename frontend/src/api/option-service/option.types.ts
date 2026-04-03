@@ -6,6 +6,8 @@ export interface WebClientFeatureFlags {
   enable_jira: boolean;
   enable_jira_dc: boolean;
   enable_linear: boolean;
+  // Enable microVM isolation via Kata Containers (only shown in staging)
+  enable_microvm?: boolean;
 }
 
 export interface WebClientConfig {

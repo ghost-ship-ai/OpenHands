@@ -66,4 +66,6 @@ export type Settings = {
   git_user_name?: string;
   git_user_email?: string;
   v1_enabled?: boolean;
+  // Enable microVM isolation via Kata Containers for enhanced security
+  use_microvm?: boolean;
 };
