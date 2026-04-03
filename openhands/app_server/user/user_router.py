@@ -3,6 +3,7 @@
 import logging
 
 from fastapi import APIRouter, Header, HTTPException, Query, status
+from fastapi.responses import JSONResponse
 
 from openhands.app_server.config import depends_user_context
 from openhands.app_server.sandbox.session_auth import validate_session_key
@@ -30,13 +31,8 @@ async def get_current_user(
         'owned by the authenticated user.',
     ),
     x_session_api_key: str | None = Header(default=None),
-) -> UserInfo:
-    """Get the current authenticated user.
-
-    .. deprecated::
-        This endpoint is deprecated. Use /users/current-user-meta instead,
-        which returns a UserMeta object from openhands.app_server.user.user_models.
-    """
+) -> UserInfo | JSONResponse:
+    """Get the current authenticated user."""
     user = await user_context.get_user_info()
     if user is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail='Not authenticated')
