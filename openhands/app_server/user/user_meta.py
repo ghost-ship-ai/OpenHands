@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 class UserMeta(BaseModel):
     """Model for user metadata from git provider.
-    
+
     This model has no dependencies and is used by various modules.
     """
 

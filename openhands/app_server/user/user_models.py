@@ -1,21 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, SecretStr
 
 # Import UserMeta from standalone module to avoid circular import
 from openhands.app_server.user.user_meta import UserMeta
-
-if TYPE_CHECKING:
-    from openhands.storage.data_models.settings import Settings
-    from openhands.integrations.provider import PROVIDER_TOKEN_TYPE
-
-
-# Lazy import for Settings to break circular dependency
-def _get_settings_class():
-    from openhands.storage.data_models.settings import Settings
-    return Settings
+from openhands.storage.data_models.settings import SandboxGroupingStrategy
 
 
 class UserInfo(BaseModel):
@@ -23,8 +14,20 @@ class UserInfo(BaseModel):
 
     id: str | None = None
     language: str | None = None
-    llm_api_key: str | None = None
-    # Add other fields from Settings that are needed - use dict for flexibility
+    llm_api_key: SecretStr | None = None
+    llm_model: str | None = None
+    llm_base_url: str | None = None
+    security_analyzer: str | None = None
+    confirmation_mode: bool | None = None
+    disabled_skills: list[str] | None = None
+    condenser_max_size: int | None = None
+    git_user_name: str | None = None
+    git_user_email: str | None = None
+    sandbox_grouping_strategy: SandboxGroupingStrategy = (
+        SandboxGroupingStrategy.NO_GROUPING
+    )
+    mcp_config: Any | None = None
+    search_api_key: SecretStr | None = None
     model_config = {'extra': 'allow'}
 
 
