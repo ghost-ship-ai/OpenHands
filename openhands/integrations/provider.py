@@ -148,6 +148,14 @@ class ProviderHandler:
             f'https://{WEB_HOST}/api/refresh-tokens' if WEB_HOST else None
         )
 
+        # Override provider domains from env vars for self-hosted instances
+        gitlab_host = os.environ.get('GITLAB_HOST', '').strip()
+        if gitlab_host:
+            self.PROVIDER_DOMAINS = {
+                **self.PROVIDER_DOMAINS,
+                ProviderType.GITLAB: gitlab_host,
+            }
+
     @property
     def provider_tokens(self) -> PROVIDER_TOKEN_TYPE:
         """Read-only access to provider tokens."""
