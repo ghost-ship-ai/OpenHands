@@ -108,8 +108,7 @@ class ProviderHandler:
     # Class variable for provider domains
     PROVIDER_DOMAINS: dict[ProviderType, str] = {
         ProviderType.GITHUB: 'github.com',
-        ProviderType.GITLAB: os.environ.get('GITLAB_HOST', 'gitlab.com').strip()
-        or 'gitlab.com',
+        ProviderType.GITLAB: 'gitlab.com',
         ProviderType.BITBUCKET: 'bitbucket.org',
         ProviderType.FORGEJO: 'codeberg.org',
         ProviderType.AZURE_DEVOPS: 'dev.azure.com',

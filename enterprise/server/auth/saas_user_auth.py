@@ -14,7 +14,7 @@ from server.auth.auth_error import (
     ExpiredError,
     NoCredentialsError,
 )
-from server.auth.constants import BITBUCKET_DATA_CENTER_HOST
+from server.auth.constants import BITBUCKET_DATA_CENTER_HOST, GITLAB_HOST
 from server.auth.token_manager import TokenManager
 from server.config import get_config
 from server.logger import logger
@@ -192,8 +192,11 @@ class SaasUserAuth(UserAuth):
                     if user_secrets and idp_type in user_secrets.provider_tokens:
                         host = user_secrets.provider_tokens[idp_type].host
 
-                    if idp_type == ProviderType.BITBUCKET_DATA_CENTER and not host:
-                        host = BITBUCKET_DATA_CENTER_HOST or None
+                    if not host:
+                        if idp_type == ProviderType.BITBUCKET_DATA_CENTER:
+                            host = BITBUCKET_DATA_CENTER_HOST or None
+                        elif idp_type == ProviderType.GITLAB:
+                            host = GITLAB_HOST if GITLAB_HOST != 'gitlab.com' else None
 
                     provider_token = await token_manager.get_idp_token(
                         access_token.get_secret_value(),

@@ -12,7 +12,6 @@ from openhands.app_server.utils.dependencies import get_dependencies
 from openhands.core.logger import openhands_logger as logger
 from openhands.integrations.provider import (
     PROVIDER_TOKEN_TYPE,
-    ProviderHandler,
     ProviderType,
 )
 from openhands.server.routes.secrets import invalidate_legacy_secrets_store
@@ -156,10 +155,7 @@ async def load_settings(
         if git_providers:
             for provider_type, provider_token in git_providers.items():
                 if provider_token.token or provider_token.user_id:
-                    provider_tokens_set[provider_type] = (
-                        provider_token.host
-                        or ProviderHandler.PROVIDER_DOMAINS.get(provider_type)
-                    )
+                    provider_tokens_set[provider_type] = provider_token.host
 
         settings_with_token_data = GETSettingsModel(
             **settings.model_dump(exclude={'secrets_store'}),
