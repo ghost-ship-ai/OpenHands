@@ -105,32 +105,15 @@ CUSTOM_SECRETS_TYPE = Mapping[str, CustomSecret]
 
 
 class ProviderHandler:
-    # Default domains for git providers
-    DEFAULT_PROVIDER_DOMAINS: dict[ProviderType, str] = {
+    # Class variable for provider domains
+    PROVIDER_DOMAINS: dict[ProviderType, str] = {
         ProviderType.GITHUB: 'github.com',
-        ProviderType.GITLAB: 'gitlab.com',
+        ProviderType.GITLAB: os.environ.get('GITLAB_HOST', 'gitlab.com').strip()
+        or 'gitlab.com',
         ProviderType.BITBUCKET: 'bitbucket.org',
         ProviderType.FORGEJO: 'codeberg.org',
         ProviderType.AZURE_DEVOPS: 'dev.azure.com',
     }
-
-    # Env vars that override default domains for self-hosted instances.
-    # Add entries here to support new self-hosted providers.
-    _PROVIDER_HOST_ENV_VARS: dict[ProviderType, str] = {
-        ProviderType.GITLAB: 'GITLAB_HOST',
-    }
-
-    @staticmethod
-    def _resolve_provider_domains() -> dict[ProviderType, str]:
-        """Build provider domains, applying env var overrides."""
-        domains = dict(ProviderHandler.DEFAULT_PROVIDER_DOMAINS)
-        for provider, env_var in ProviderHandler._PROVIDER_HOST_ENV_VARS.items():
-            host = os.environ.get(env_var, '').strip()
-            if host:
-                domains[provider] = host
-        return domains
-
-    PROVIDER_DOMAINS: dict[ProviderType, str] = _resolve_provider_domains()
 
     def __init__(
         self,

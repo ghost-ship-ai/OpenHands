@@ -156,16 +156,10 @@ async def load_settings(
         if git_providers:
             for provider_type, provider_token in git_providers.items():
                 if provider_token.token or provider_token.user_id:
-                    host = provider_token.host
-                    # Fall back to env-var-configured host for self-hosted providers
-                    if not host:
-                        configured = ProviderHandler.PROVIDER_DOMAINS.get(provider_type)
-                        default = ProviderHandler.DEFAULT_PROVIDER_DOMAINS.get(
-                            provider_type
-                        )
-                        if configured and configured != default:
-                            host = configured
-                    provider_tokens_set[provider_type] = host
+                    provider_tokens_set[provider_type] = (
+                        provider_token.host
+                        or ProviderHandler.PROVIDER_DOMAINS.get(provider_type)
+                    )
 
         settings_with_token_data = GETSettingsModel(
             **settings.model_dump(exclude={'secrets_store'}),
