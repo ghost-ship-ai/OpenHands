@@ -8,13 +8,23 @@ from pydantic import SecretStr
 from openhands.app_server.user.user_models import UserMeta
 from openhands.core.logger import openhands_logger as logger
 from openhands.integrations.service_type_models import (
+    AuthenticationError,
     Branch,
+    Comment,
+    CreateMicroagent,
     MicroagentParseError,
+    OwnerType,
     PaginatedBranchesResponse,
+    ProviderTimeoutError,
+    ProviderType,
+    RateLimitError,
     Repository,
     RequestMethod,
     ResourceNotFoundError,
     SuggestedTask,
+    TaskType,
+    TokenResponse,
+    UnknownException,
 )
 from openhands.microagent.microagent import BaseMicroagent
 from openhands.microagent.types import MicroagentContentResponse, MicroagentResponse
@@ -371,3 +381,26 @@ class GitService(Protocol):
             True if PR is active (open), False if closed/merged
         """
         ...
+
+
+__all__ = [
+    'BaseGitService',
+    'GitService',
+    'TokenResponse',
+    'ProviderType',
+    'TaskType',
+    'OwnerType',
+    'SuggestedTask',
+    'CreateMicroagent',
+    'Branch',
+    'PaginatedBranchesResponse',
+    'Repository',
+    'Comment',
+    'AuthenticationError',
+    'UnknownException',
+    'RateLimitError',
+    'ProviderTimeoutError',
+    'ResourceNotFoundError',
+    'MicroagentParseError',
+    'RequestMethod',
+]
