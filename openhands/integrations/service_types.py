@@ -7,7 +7,7 @@ from typing import Any, Protocol
 from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel, SecretStr
 
-from openhands.app_server.user.user_models.user_meta import UserMeta
+from openhands.app_server.user.user_models import UserMeta
 from openhands.core.logger import openhands_logger as logger
 from openhands.microagent.microagent import BaseMicroagent
 from openhands.microagent.types import MicroagentContentResponse, MicroagentResponse

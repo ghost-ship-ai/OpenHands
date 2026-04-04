@@ -1,6 +1,6 @@
 """Feature operations for Azure DevOps integration (microagents, suggested tasks, user)."""
 
-from openhands.app_server.user.user_models.user_meta import UserMeta
+from openhands.app_server.user.user_models import UserMeta
 from openhands.core.logger import openhands_logger as logger
 from openhands.integrations.azure_devops.service.base import AzureDevOpsMixinBase
 from openhands.integrations.service_types import (

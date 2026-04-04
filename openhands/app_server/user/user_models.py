@@ -1,9 +1,15 @@
-from __future__ import annotations
-
 from enum import Enum
-from typing import Any
 
-from pydantic import BaseModel, SecretStr
+from pydantic import BaseModel
+
+from openhands.integrations.provider import PROVIDER_TOKEN_TYPE
+from openhands.storage.data_models.settings import Settings
+
+
+class UserInfo(Settings):
+    """Model for user settings including the current user id."""
+
+    id: str | None = None
 
 
 class SandboxGroupingStrategy(str, Enum):
@@ -34,28 +40,6 @@ class UserMeta(BaseModel):
     email: str | None = None
 
 
-class UserInfo(BaseModel):
-    """Model for user settings including the current user id."""
-
-    id: str | None = None
-    language: str | None = None
-    llm_api_key: SecretStr | None = None
-    llm_model: str | None = None
-    llm_base_url: str | None = None
-    security_analyzer: str | None = None
-    confirmation_mode: bool | None = None
-    disabled_skills: list[str] | None = None
-    condenser_max_size: int | None = None
-    git_user_name: str | None = None
-    git_user_email: str | None = None
-    sandbox_grouping_strategy: SandboxGroupingStrategy = (
-        SandboxGroupingStrategy.NO_GROUPING
-    )
-    mcp_config: Any | None = None
-    search_api_key: SecretStr | None = None
-    model_config = {'extra': 'allow'}
-
-
 class ProviderTokenPage:
-    items: list[Any]
+    items: list[PROVIDER_TOKEN_TYPE]
     next_page_id: str | None = None

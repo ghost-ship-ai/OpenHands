@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 
 from openhands.app_server.services.injector import Injector
-from openhands.app_server.user.user_models import UserInfo
-from openhands.app_server.user.user_models.user_meta import UserMeta
+from openhands.app_server.user.user_models import UserInfo, UserMeta
 from openhands.integrations.provider import PROVIDER_TOKEN_TYPE, ProviderType
 from openhands.sdk.secret import SecretSource
 from openhands.sdk.utils.models import DiscriminatedUnionMixin

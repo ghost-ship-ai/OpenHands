@@ -1,8 +1,7 @@
 from uuid import UUID
 
 from openhands.app_server.user.user_context import UserContext
-from openhands.app_server.user.user_models import UserInfo
-from openhands.app_server.user.user_models.user_meta import UserMeta
+from openhands.app_server.user.user_models import UserInfo, UserMeta
 from openhands.integrations.provider import PROVIDER_TOKEN_TYPE, ProviderHandler
 from openhands.integrations.service_types import ProviderType
 from openhands.sdk.secret import SecretSource, StaticSecret

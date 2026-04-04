@@ -14,7 +14,7 @@ from pydantic import (
     SecretStr,
 )
 
-from openhands.app_server.user.user_models.user_meta import UserMeta
+from openhands.app_server.user.user_models import UserMeta
 from openhands.core.logger import openhands_logger as logger
 from openhands.events.action.action import Action
 from openhands.events.action.commands import CmdRunAction

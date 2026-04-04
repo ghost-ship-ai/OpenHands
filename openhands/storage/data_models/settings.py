@@ -16,7 +16,6 @@ from pydantic import (
 from openhands.app_server.user.user_models import SandboxGroupingStrategy
 from openhands.core.config.llm_config import LLMConfig
 from openhands.core.config.mcp_config import MCPConfig
-from openhands.core.config.utils import load_openhands_config
 from openhands.storage.data_models.secrets import Secrets
 
 
@@ -137,6 +136,8 @@ class Settings(BaseModel):
 
     @staticmethod
     def from_config() -> Settings | None:
+        from openhands.core.config.utils import load_openhands_config
+
         app_config = load_openhands_config()
         llm_config: LLMConfig = app_config.get_llm_config()
         if llm_config.api_key is None:

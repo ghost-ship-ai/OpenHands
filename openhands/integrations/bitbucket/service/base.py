@@ -4,7 +4,7 @@ from typing import Any
 import httpx
 from pydantic import SecretStr
 
-from openhands.app_server.user.user_models.user_meta import UserMeta
+from openhands.app_server.user.user_models import UserMeta
 from openhands.core.logger import openhands_logger as logger
 from openhands.integrations.protocols.http_client import HTTPClient
 from openhands.integrations.service_types import (

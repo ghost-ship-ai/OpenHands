@@ -8,8 +8,7 @@ from fastapi.responses import JSONResponse
 from openhands.app_server.config import depends_user_context
 from openhands.app_server.sandbox.session_auth import validate_session_key
 from openhands.app_server.user.user_context import UserContext
-from openhands.app_server.user.user_models import UserInfo
-from openhands.app_server.user.user_models.user_meta import UserMeta
+from openhands.app_server.user.user_models import UserInfo, UserMeta
 from openhands.app_server.utils.dependencies import get_dependencies
 
 _logger = logging.getLogger(__name__)
@@ -32,7 +31,7 @@ async def get_current_user(
         'owned by the authenticated user.',
     ),
     x_session_api_key: str | None = Header(default=None),
-) -> UserInfo | JSONResponse:
+) -> UserInfo:
     """Get the current authenticated user."""
     user = await user_context.get_user_info()
     if user is None:
