@@ -4,8 +4,6 @@ from typing import Any
 
 from pydantic import BaseModel, SecretStr
 
-# Import UserMeta from standalone module to avoid circular import
-from openhands.app_server.user.user_meta import UserMeta
 from openhands.storage.data_models.settings import SandboxGroupingStrategy
 
 
@@ -34,7 +32,3 @@ class UserInfo(BaseModel):
 class ProviderTokenPage:
     items: list[Any]
     next_page_id: str | None = None
-
-
-# Re-export UserMeta for backward compatibility
-__all__ = ['UserMeta', 'UserInfo', 'ProviderTokenPage']

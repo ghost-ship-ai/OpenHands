@@ -3,7 +3,7 @@ from typing import Any
 import httpx
 from pydantic import SecretStr
 
-from openhands.app_server.user.user_models import UserMeta
+from openhands.app_server.user.user_meta import UserMeta
 from openhands.integrations.protocols.http_client import HTTPClient
 from openhands.integrations.service_types import (
     BaseGitService,

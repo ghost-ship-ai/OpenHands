@@ -14,7 +14,7 @@ from enum import Enum
 from fastapi import Request
 from pydantic import SecretStr
 
-from openhands.app_server.user.user_models import UserMeta
+from openhands.app_server.user.user_meta import UserMeta
 from openhands.integrations.provider import PROVIDER_TOKEN_TYPE
 from openhands.server.settings import Settings
 from openhands.server.shared import server_config

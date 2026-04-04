@@ -32,7 +32,7 @@ from storage.user_store import UserStore
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 from utils.identity import resolve_display_name
 
-from openhands.app_server.user.user_models import UserMeta
+from openhands.app_server.user.user_meta import UserMeta
 from openhands.integrations.provider import (
     PROVIDER_TOKEN_TYPE,
     ProviderToken,

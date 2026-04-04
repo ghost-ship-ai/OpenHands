@@ -8,7 +8,8 @@ from fastapi.responses import JSONResponse
 from openhands.app_server.config import depends_user_context
 from openhands.app_server.sandbox.session_auth import validate_session_key
 from openhands.app_server.user.user_context import UserContext
-from openhands.app_server.user.user_models import UserInfo, UserMeta
+from openhands.app_server.user.user_meta import UserMeta
+from openhands.app_server.user.user_models import UserInfo
 from openhands.app_server.utils.dependencies import get_dependencies
 
 _logger = logging.getLogger(__name__)
