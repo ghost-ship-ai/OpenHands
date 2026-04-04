@@ -14,24 +14,11 @@ from pydantic import (
     model_validator,
 )
 
+from openhands.app_server.user.user_models import SandboxGroupingStrategy
 from openhands.core.config.llm_config import LLMConfig
 from openhands.core.config.mcp_config import MCPConfig
 from openhands.core.config.utils import load_openhands_config
 from openhands.storage.data_models.secrets import Secrets
-
-
-class SandboxGroupingStrategy(str, Enum):
-    """Strategy for grouping conversations within sandboxes."""
-
-    NO_GROUPING = 'NO_GROUPING'  # Default - each conversation gets its own sandbox
-    GROUP_BY_NEWEST = 'GROUP_BY_NEWEST'  # Add to the most recently created sandbox
-    LEAST_RECENTLY_USED = (
-        'LEAST_RECENTLY_USED'  # Add to the least recently used sandbox
-    )
-    FEWEST_CONVERSATIONS = (
-        'FEWEST_CONVERSATIONS'  # Add to sandbox with fewest conversations
-    )
-    ADD_TO_ANY = 'ADD_TO_ANY'  # Add to any available sandbox (first found)
 
 
 class Settings(BaseModel):

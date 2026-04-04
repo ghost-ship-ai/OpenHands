@@ -7,7 +7,7 @@ from server.auth.token_manager import TokenManager
 from storage.user_store import UserStore
 from utils.identity import resolve_display_name
 
-from openhands.app_server.user.user_meta import UserMeta
+from openhands.app_server.user.user_models.user_meta import UserMeta
 from openhands.app_server.utils.dependencies import get_dependencies
 from openhands.integrations.provider import (
     PROVIDER_TOKEN_TYPE,

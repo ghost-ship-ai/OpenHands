@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import JSONResponse
 from pydantic import SecretStr
 
-from openhands.app_server.user.user_meta import UserMeta
+from openhands.app_server.user.user_models.user_meta import UserMeta
 from openhands.app_server.utils.dependencies import get_dependencies
 from openhands.core.logger import openhands_logger as logger
 from openhands.integrations.provider import (
