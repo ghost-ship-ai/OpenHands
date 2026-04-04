@@ -8,27 +8,59 @@ from pydantic import SecretStr
 from openhands.app_server.user.user_models import UserMeta
 from openhands.core.logger import openhands_logger as logger
 from openhands.integrations.service_type_models import (
-    AuthenticationError,
+    AuthenticationError as _AuthenticationError,
+)
+from openhands.integrations.service_type_models import (
     Branch,
-    Comment,
-    CreateMicroagent,
     MicroagentParseError,
-    OwnerType,
     PaginatedBranchesResponse,
-    ProviderTimeoutError,
-    ProviderType,
-    RateLimitError,
     Repository,
     RequestMethod,
     ResourceNotFoundError,
     SuggestedTask,
-    TaskType,
-    TokenResponse,
-    UnknownException,
+)
+from openhands.integrations.service_type_models import (
+    Comment as _Comment,
+)
+from openhands.integrations.service_type_models import (
+    CreateMicroagent as _CreateMicroagent,
+)
+from openhands.integrations.service_type_models import (
+    OwnerType as _OwnerType,
+)
+from openhands.integrations.service_type_models import (
+    ProviderTimeoutError as _ProviderTimeoutError,
+)
+from openhands.integrations.service_type_models import (
+    ProviderType as _ProviderType,
+)
+from openhands.integrations.service_type_models import (
+    RateLimitError as _RateLimitError,
+)
+from openhands.integrations.service_type_models import (
+    TaskType as _TaskType,
+)
+from openhands.integrations.service_type_models import (
+    TokenResponse as _TokenResponse,
+)
+from openhands.integrations.service_type_models import (
+    UnknownException as _UnknownException,
 )
 from openhands.microagent.microagent import BaseMicroagent
 from openhands.microagent.types import MicroagentContentResponse, MicroagentResponse
 from openhands.server.types import AppMode
+
+# Exports for backward compatibility
+AuthenticationError = _AuthenticationError
+Comment = _Comment
+CreateMicroagent = _CreateMicroagent
+OwnerType = _OwnerType
+ProviderTimeoutError = _ProviderTimeoutError
+ProviderType = _ProviderType
+RateLimitError = _RateLimitError
+TaskType = _TaskType
+TokenResponse = _TokenResponse
+UnknownException = _UnknownException
 
 
 class BaseGitService(ABC):
@@ -381,26 +413,3 @@ class GitService(Protocol):
             True if PR is active (open), False if closed/merged
         """
         ...
-
-
-__all__ = [
-    'BaseGitService',
-    'GitService',
-    'TokenResponse',
-    'ProviderType',
-    'TaskType',
-    'OwnerType',
-    'SuggestedTask',
-    'CreateMicroagent',
-    'Branch',
-    'PaginatedBranchesResponse',
-    'Repository',
-    'Comment',
-    'AuthenticationError',
-    'UnknownException',
-    'RateLimitError',
-    'ProviderTimeoutError',
-    'ResourceNotFoundError',
-    'MicroagentParseError',
-    'RequestMethod',
-]
