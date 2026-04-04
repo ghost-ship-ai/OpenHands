@@ -9,6 +9,10 @@ from server.constants import LITE_LLM_API_URL
 from server.logger import logger
 from sqlalchemy import select, update
 from sqlalchemy.orm import joinedload
+from storage.agent_settings_utils import (
+    compute_agent_settings_overrides,
+    merge_agent_settings,
+)
 from storage.database import a_session_maker
 from storage.lite_llm_manager import LiteLlmManager, get_openhands_cloud_key_alias
 from storage.org import Org
@@ -91,6 +95,15 @@ class SaasSettingsStore(SettingsStore):
             await session.execute(stmt)
             await session.commit()
 
+    @staticmethod
+    def _get_effective_llm_api_key(
+        org: Org,
+        org_member: OrgMember,
+    ) -> SecretStr | None:
+        if org_member.has_custom_llm_api_key:
+            return org_member.llm_api_key
+        return org.llm_api_key or org_member.llm_api_key
+
     async def load(self) -> Settings | None:
         user = await UserStore.get_user_by_id(self.user_id)
         if not user:
@@ -103,7 +116,7 @@ class SaasSettingsStore(SettingsStore):
             if om.org_id == org_id:
                 org_member = om
                 break
-        if not org_member or not org_member.llm_api_key:
+        if not org_member:
             return None
         org = await OrgStore.get_org_by_id_async(org_id)
         if not org:
@@ -133,14 +146,15 @@ class SaasSettingsStore(SettingsStore):
                 if (normalized := c.name.lstrip('_')) in Settings.model_fields
             },
         }
-        kwargs['llm_api_key'] = org_member.llm_api_key
+        effective_llm_api_key = self._get_effective_llm_api_key(org, org_member)
+        if effective_llm_api_key is not None:
+            kwargs['llm_api_key'] = effective_llm_api_key
         if org_member.mcp_config is not None:
             kwargs['mcp_config'] = org_member.mcp_config
-        effective_member_agent_settings = {
-            **org_agent_settings,
-            **member_agent_settings,
-        }
-        kwargs['agent_settings'] = effective_member_agent_settings
+        kwargs['agent_settings'] = merge_agent_settings(
+            org_agent_settings,
+            member_agent_settings,
+        )
         if org.v1_enabled is None:
             kwargs['v1_enabled'] = True
         # Apply default if sandbox_grouping_strategy is None in the database
@@ -149,12 +163,6 @@ class SaasSettingsStore(SettingsStore):
 
         settings = Settings(**kwargs)
         object.__setattr__(settings, 'mcp_config', settings.to_legacy_mcp_config())
-        if org_agent_settings != (org.agent_settings or {}):
-            await self._persist_org_agent_settings_async(org_id, org_agent_settings)
-        if effective_member_agent_settings != (org_member.agent_settings or {}):
-            await self._persist_agent_settings_async(
-                org_id, effective_member_agent_settings
-            )
         return settings
 
     async def store(self, item: Settings):
@@ -200,7 +208,7 @@ class SaasSettingsStore(SettingsStore):
                 if om.org_id == org_id:
                     org_member = om
                     break
-            if not org_member or not org_member.llm_api_key:
+            if not org_member:
                 return None
 
             result = await session.execute(select(Org).filter(Org.id == org_id))
@@ -215,7 +223,6 @@ class SaasSettingsStore(SettingsStore):
             llm_base_url = item.get_agent_setting('llm.base_url')
             uses_managed_llm_key = not llm_base_url or llm_base_url == LITE_LLM_API_URL
 
-            # Check if we need to generate an LLM key.
             if uses_managed_llm_key:
                 await self._ensure_api_key(
                     item, str(org_id), openhands_type=is_openhands_model(llm_model)
@@ -224,16 +231,15 @@ class SaasSettingsStore(SettingsStore):
             normalized_agent_settings = item.normalized_agent_settings(
                 strip_secret_values=True
             )
-            shared_agent_settings = {
+            effective_agent_settings = {
                 key: value
                 for key, value in normalized_agent_settings.items()
                 if key not in {'llm.api_key', 'mcp_config'}
             }
-            current_member_llm_api_key = item.get_secret_agent_setting('llm.api_key')
-            shared_llm_api_key = (
-                current_member_llm_api_key.get_secret_value()
-                if current_member_llm_api_key and not uses_managed_llm_key
-                else None
+            org.agent_settings = OrgStore.get_agent_settings_from_org(org)
+            org_member.agent_settings = compute_agent_settings_overrides(
+                org.agent_settings,
+                effective_agent_settings,
             )
 
             kwargs = item.model_dump(context={'expose_secrets': True})
@@ -247,24 +253,41 @@ class SaasSettingsStore(SettingsStore):
             for key, value in kwargs.items():
                 if hasattr(user, key):
                     setattr(user, key, value)
-                if key != 'mcp_config' and hasattr(org, key):
-                    setattr(org, key, value)
                 if key == 'mcp_config' and hasattr(org_member, key):
                     setattr(org_member, key, value)
+                if key != 'mcp_config' and hasattr(org, key) and key not in {
+                    'llm_api_key',
+                    'agent_settings',
+                }:
+                    setattr(org, key, value)
 
-            org.agent_settings = shared_agent_settings
-
-            result = await session.execute(
-                select(OrgMember).filter(OrgMember.org_id == org_id)
+            current_member_llm_api_key = item.get_secret_agent_setting('llm.api_key')
+            org_default_llm_api_key = org.llm_api_key
+            org_default_llm_api_key_raw = (
+                org_default_llm_api_key.get_secret_value()
+                if org_default_llm_api_key
+                else None
             )
-            org_members = list(result.scalars().all())
-            for member in org_members:
-                member.agent_settings = dict(shared_agent_settings)
-                if shared_llm_api_key is not None:
-                    member.llm_api_key = shared_llm_api_key
+            current_member_llm_api_key_raw = (
+                current_member_llm_api_key.get_secret_value()
+                if current_member_llm_api_key
+                else None
+            )
 
-            if current_member_llm_api_key is not None:
+            if uses_managed_llm_key and current_member_llm_api_key is not None:
                 org_member.llm_api_key = current_member_llm_api_key
+                org_member.has_custom_llm_api_key = False
+            elif current_member_llm_api_key_raw is not None:
+                if (
+                    org_default_llm_api_key_raw
+                    and current_member_llm_api_key_raw == org_default_llm_api_key_raw
+                ):
+                    org_member.has_custom_llm_api_key = False
+                else:
+                    org_member.llm_api_key = current_member_llm_api_key
+                    org_member.has_custom_llm_api_key = True
+            elif org_default_llm_api_key_raw is not None:
+                org_member.has_custom_llm_api_key = False
 
             await session.commit()
 

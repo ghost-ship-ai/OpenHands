@@ -60,8 +60,8 @@ export const useCreateConversation = () => {
       let settings: Settings;
       try {
         settings = await queryClient.ensureQueryData<Settings>({
-          queryKey: ["settings", organizationId],
-          queryFn: getSettingsQueryFn,
+          queryKey: ["settings", "personal", organizationId],
+          queryFn: () => getSettingsQueryFn("personal"),
           staleTime: 1000 * 60 * 5,
         });
       } catch {

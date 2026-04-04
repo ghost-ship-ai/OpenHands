@@ -225,9 +225,10 @@ class OrgUpdate(BaseModel):
 
 
 class OrgLLMSettingsResponse(BaseModel):
-    """Response model for organization LLM settings."""
+    """Response model for organization default LLM settings."""
 
     agent_settings: dict[str, Any] = Field(default_factory=dict)
+    llm_api_key_set: bool = False
     search_api_key: str | None = None  # Masked in response
 
     @staticmethod
@@ -247,6 +248,7 @@ class OrgLLMSettingsResponse(BaseModel):
         """Create response from Org entity."""
         return cls(
             agent_settings=get_org_agent_settings(org),
+            llm_api_key_set=org.llm_api_key is not None,
             search_api_key=cls._mask_key(org.search_api_key),
         )
 
@@ -280,7 +282,9 @@ class OrgLLMSettingsUpdate(BaseModel):
     def apply_to_org(self, org: Org) -> None:
         """Apply non-None settings to the organization model."""
         if self.search_api_key is not None:
-            org.search_api_key = self.search_api_key
+            org.search_api_key = self.search_api_key or None
+        if self.llm_api_key is not None:
+            org.llm_api_key = self.llm_api_key or None
 
     def get_member_updates(self) -> OrgMemberLLMSettings | None:
         """Get updates that need to be propagated to org members."""

@@ -39,21 +39,39 @@ export const SAAS_NAV_ITEMS: SettingsNavItem[] = [
   },
   {
     icon: <CircuitIcon width={22} height={22} />,
-    to: "/settings",
+    to: "/settings/org-defaults",
     text: "COMMON$LANGUAGE_MODEL_LLM",
     section: "org",
   },
   {
     icon: <MemoryIcon width={22} height={22} />,
-    to: "/settings/condenser",
+    to: "/settings/org-defaults/condenser",
     text: "SETTINGS$NAV_CONDENSER",
     section: "org",
   },
   {
     icon: <LockIcon width={22} height={22} />,
-    to: "/settings/verification",
+    to: "/settings/org-defaults/verification",
     text: "SETTINGS$NAV_VERIFICATION",
     section: "org",
+  },
+  {
+    icon: <CircuitIcon width={22} height={22} />,
+    to: "/settings",
+    text: "COMMON$LANGUAGE_MODEL_LLM",
+    section: "personal",
+  },
+  {
+    icon: <MemoryIcon width={22} height={22} />,
+    to: "/settings/condenser",
+    text: "SETTINGS$NAV_CONDENSER",
+    section: "personal",
+  },
+  {
+    icon: <LockIcon width={22} height={22} />,
+    to: "/settings/verification",
+    text: "SETTINGS$NAV_VERIFICATION",
+    section: "personal",
   },
   {
     icon: <KeyIcon width={22} height={22} />,

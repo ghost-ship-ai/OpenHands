@@ -2243,6 +2243,41 @@
     "uk": "Це налаштування впливає на всю організацію",
     "ca": "Aquesta configuració afecta tota l'organització"
   },
+  "SETTINGS$ORG_DEFAULTS_INFO": {
+    "en": "These organization defaults are applied first. Members can still add their own credentials or personal overrides where allowed.",
+    "ja": "These organization defaults are applied first. Members can still add their own credentials or personal overrides where allowed.",
+    "zh-CN": "These organization defaults are applied first. Members can still add their own credentials or personal overrides where allowed.",
+    "zh-TW": "These organization defaults are applied first. Members can still add their own credentials or personal overrides where allowed.",
+    "ko-KR": "These organization defaults are applied first. Members can still add their own credentials or personal overrides where allowed.",
+    "no": "These organization defaults are applied first. Members can still add their own credentials or personal overrides where allowed.",
+    "it": "These organization defaults are applied first. Members can still add their own credentials or personal overrides where allowed.",
+    "pt": "These organization defaults are applied first. Members can still add their own credentials or personal overrides where allowed.",
+    "es": "These organization defaults are applied first. Members can still add their own credentials or personal overrides where allowed.",
+    "ar": "These organization defaults are applied first. Members can still add their own credentials or personal overrides where allowed.",
+    "fr": "These organization defaults are applied first. Members can still add their own credentials or personal overrides where allowed.",
+    "tr": "These organization defaults are applied first. Members can still add their own credentials or personal overrides where allowed.",
+    "de": "These organization defaults are applied first. Members can still add their own credentials or personal overrides where allowed.",
+    "uk": "These organization defaults are applied first. Members can still add their own credentials or personal overrides where allowed.",
+    "ca": "These organization defaults are applied first. Members can still add their own credentials or personal overrides where allowed."
+  },
+  "SETTINGS$PERSONAL_AGENT_INFO": {
+    "en": "These settings only affect your own work. Organization defaults still apply unless you override them here.",
+    "ja": "These settings only affect your own work. Organization defaults still apply unless you override them here.",
+    "zh-CN": "These settings only affect your own work. Organization defaults still apply unless you override them here.",
+    "zh-TW": "These settings only affect your own work. Organization defaults still apply unless you override them here.",
+    "ko-KR": "These settings only affect your own work. Organization defaults still apply unless you override them here.",
+    "no": "These settings only affect your own work. Organization defaults still apply unless you override them here.",
+    "it": "These settings only affect your own work. Organization defaults still apply unless you override them here.",
+    "pt": "These settings only affect your own work. Organization defaults still apply unless you override them here.",
+    "es": "These settings only affect your own work. Organization defaults still apply unless you override them here.",
+    "ar": "These settings only affect your own work. Organization defaults still apply unless you override them here.",
+    "fr": "These settings only affect your own work. Organization defaults still apply unless you override them here.",
+    "tr": "These settings only affect your own work. Organization defaults still apply unless you override them here.",
+    "de": "These settings only affect your own work. Organization defaults still apply unless you override them here.",
+    "uk": "These settings only affect your own work. Organization defaults still apply unless you override them here.",
+    "ca": "These settings only affect your own work. Organization defaults still apply unless you override them here."
+  },
+
   "SETTINGS$GITHUB": {
     "en": "GitHub",
     "ja": "GitHub",

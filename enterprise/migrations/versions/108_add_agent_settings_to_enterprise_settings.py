@@ -1,6 +1,6 @@
 """Add agent_settings columns to enterprise settings tables.
 
-Revision ID: 107
+Revision ID: 108
 Revises: 106
 Create Date: 2026-03-22 00:00:00.000000
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = '107'
+revision: str = '108'
 down_revision: Union[str, None] = '106'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -38,6 +38,17 @@ def upgrade() -> None:
         'org',
         sa.Column(
             'agent_settings', sa.JSON(), nullable=False, server_default=_EMPTY_JSON
+        ),
+    )
+
+    op.add_column('org', sa.Column('_llm_api_key', sa.String(), nullable=True))
+    op.add_column(
+        'org_member',
+        sa.Column(
+            'has_custom_llm_api_key',
+            sa.Boolean(),
+            nullable=False,
+            server_default=sa.false(),
         ),
     )
 
@@ -133,6 +144,7 @@ def upgrade() -> None:
     op.alter_column('user_settings', 'agent_settings', server_default=None)
     op.alter_column('org_member', 'agent_settings', server_default=None)
     op.alter_column('org', 'agent_settings', server_default=None)
+    op.alter_column('org_member', 'has_custom_llm_api_key', server_default=None)
     op.drop_column('user_settings', 'agent')
     op.drop_column('user_settings', 'max_iterations')
     op.drop_column('user_settings', 'security_analyzer')
@@ -292,5 +304,7 @@ def downgrade() -> None:
     )
 
     op.drop_column('org', 'agent_settings')
+    op.drop_column('org', '_llm_api_key')
     op.drop_column('org_member', 'agent_settings')
+    op.drop_column('org_member', 'has_custom_llm_api_key')
     op.drop_column('user_settings', 'agent_settings')

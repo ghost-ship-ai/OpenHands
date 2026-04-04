@@ -42,6 +42,7 @@ def mock_org(org_id):
         'verification.confirmation_mode': True,
         'max_iterations': 50,
     }
+    org.llm_api_key = None
     org.search_api_key = None
     return org
 
@@ -141,6 +142,7 @@ async def test_update_org_llm_settings_success(
         'verification.confirmation_mode': False,
         'max_iterations': 100,
     }
+    updated_org.llm_api_key = None
     updated_org.search_api_key = None
 
     update_data = OrgLLMSettingsUpdate(

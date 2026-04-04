@@ -11,7 +11,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from storage.agent_settings_utils import get_org_agent_settings, merge_agent_settings
 from storage.org import Org
-from storage.org_member_store import OrgMemberStore
 from storage.user import User
 
 
@@ -48,9 +47,8 @@ class OrgLLMSettingsStore:
     async def update_org_llm_settings(
         self, org_id: UUID, update_data: OrgLLMSettingsUpdate
     ) -> Org | None:
-        """Update organization LLM settings.
+        """Update organization default LLM settings.
 
-        Also propagates relevant settings to all org members.
         Uses flush() - commit happens at request end via DbSessionInjector.
 
         Args:
@@ -73,13 +71,6 @@ class OrgLLMSettingsStore:
             org.agent_settings = merge_agent_settings(
                 get_org_agent_settings(org),
                 update_data.agent_settings,
-            )
-
-        # Propagate relevant settings to all org members
-        member_updates = update_data.get_member_updates()
-        if member_updates:
-            await OrgMemberStore.update_all_members_llm_settings_async(
-                self.db_session, org_id, member_updates
             )
 
         # flush instead of commit - DbSessionInjector auto-commits at request end

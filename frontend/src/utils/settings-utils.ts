@@ -54,7 +54,11 @@ export function isSettingsPageHidden(
   path: string,
   featureFlags: WebClientFeatureFlags | undefined,
 ): boolean {
-  if (featureFlags?.hide_llm_settings && path === "/settings") return true;
+  if (
+    featureFlags?.hide_llm_settings &&
+    (path === "/settings" || path.startsWith("/settings/org-defaults"))
+  )
+    return true;
   if (featureFlags?.hide_users_page && path === "/settings/user") return true;
   if (featureFlags?.hide_billing_page && path === "/settings/billing")
     return true;

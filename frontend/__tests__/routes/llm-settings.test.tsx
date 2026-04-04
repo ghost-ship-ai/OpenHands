@@ -299,7 +299,7 @@ describe("LlmSettingsScreen", () => {
     expect(screen.getByTestId("llm-api-key-input")).toBeInTheDocument();
   });
 
-  it("makes team members read-only in SaaS mode", async () => {
+  it("keeps personal settings editable for team members in SaaS mode", async () => {
     vi.spyOn(SettingsService, "getSettings").mockResolvedValue(buildSettings());
 
     renderLlmSettingsScreen({
@@ -308,7 +308,7 @@ describe("LlmSettingsScreen", () => {
     });
 
     await screen.findByTestId("llm-settings-screen");
-    expect(screen.queryByTestId("save-button")).not.toBeInTheDocument();
+    expect(screen.getByTestId("save-button")).toBeInTheDocument();
   });
 
   describe("Contextual info messages", () => {
@@ -591,8 +591,8 @@ describe("LlmSettingsScreen", () => {
   });
 
   describe("Role-based permissions", () => {
-    describe("User role (read-only)", () => {
-      it("should disable all input fields in basic view", async () => {
+    describe("Member role (personal overrides allowed)", () => {
+      it("should keep all input fields enabled in basic view", async () => {
         vi.spyOn(SettingsService, "getSettings").mockResolvedValue(
           buildSettings({
             llm_model: "openai/gpt-4o",
@@ -614,13 +614,13 @@ describe("LlmSettingsScreen", () => {
         const apiKeyInput = within(basicForm).getByTestId("llm-api-key-input");
 
         await waitFor(() => {
-          expect(providerInput).toBeDisabled();
-          expect(modelInput).toBeDisabled();
-          expect(apiKeyInput).toBeDisabled();
+          expect(providerInput).toBeEnabled();
+          expect(modelInput).toBeEnabled();
+          expect(apiKeyInput).toBeEnabled();
         });
       });
 
-      it("should not render submit button", async () => {
+      it("should render the submit button", async () => {
         vi.spyOn(SettingsService, "getSettings").mockResolvedValue(
           buildSettings(),
         );
@@ -632,10 +632,10 @@ describe("LlmSettingsScreen", () => {
         });
 
         await screen.findByTestId("llm-settings-screen");
-        expect(screen.queryByTestId("save-button")).not.toBeInTheDocument();
+        expect(screen.getByTestId("save-button")).toBeInTheDocument();
       });
 
-      it("should disable the advanced/basic toggle for read-only users", async () => {
+      it("should keep the advanced/basic toggle enabled for members", async () => {
         vi.spyOn(SettingsService, "getSettings").mockResolvedValue(
           buildSettingsWithAdvancedToggle(),
         );
@@ -652,8 +652,8 @@ describe("LlmSettingsScreen", () => {
           "sdk-section-advanced-toggle",
         );
 
-        expect(basicToggle).toBeDisabled();
-        expect(advancedToggle).toBeDisabled();
+        expect(basicToggle).toBeEnabled();
+        expect(advancedToggle).toBeEnabled();
         expect(
           screen.getByTestId("llm-settings-form-basic"),
         ).toBeInTheDocument();

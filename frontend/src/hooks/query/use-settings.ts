@@ -2,7 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useSelectedOrganizationId } from "#/context/use-selected-organization";
 import { useIsOnIntermediatePage } from "#/hooks/use-is-on-intermediate-page";
 import { DEFAULT_SETTINGS } from "#/services/settings";
-import { Settings, SettingsValue } from "#/types/settings";
+import { Settings, SettingsScope, SettingsValue } from "#/types/settings";
+import { organizationService } from "#/api/organization-service/organization-service.api";
 import SettingsService from "#/api/settings-service/settings-service.api";
 import { useIsAuthed } from "./use-is-authed";
 import { useConfig } from "./use-config";
@@ -14,14 +15,14 @@ import {
 } from "#/utils/settings-value-pickers";
 import { parseMcpConfig } from "#/utils/mcp-config";
 
-export const getSettingsQueryFn = async (): Promise<Settings> => {
-  const settings = await SettingsService.getSettings();
+const normalizeSettingsResponse = (settings: Partial<Settings>): Settings => {
   const agentSettings = (settings.agent_settings ?? {}) as Record<
     string,
     SettingsValue
   >;
 
   return {
+    ...DEFAULT_SETTINGS,
     ...settings,
     llm_model:
       pickFirstString(settings.llm_model, agentSettings["llm.model"]) ??
@@ -33,6 +34,7 @@ export const getSettingsQueryFn = async (): Promise<Settings> => {
       pickFirstString(agentSettings.agent, settings.agent) ??
       DEFAULT_SETTINGS.agent,
     llm_api_key: settings.llm_api_key ?? null,
+    llm_api_key_set: settings.llm_api_key_set ?? false,
     confirmation_mode:
       pickFirstBoolean(
         agentSettings["verification.confirmation_mode"],
@@ -70,7 +72,18 @@ export const getSettingsQueryFn = async (): Promise<Settings> => {
   };
 };
 
-export const useSettings = () => {
+export const getSettingsQueryFn = async (
+  scope: SettingsScope = "personal",
+): Promise<Settings> => {
+  const settings =
+    scope === "org"
+      ? await organizationService.getOrganizationAgentSettings()
+      : await SettingsService.getSettings();
+
+  return normalizeSettingsResponse(settings);
+};
+
+export const useSettings = (scope: SettingsScope = "personal") => {
   const isOnIntermediatePage = useIsOnIntermediatePage();
   const { data: userIsAuthenticated } = useIsAuthed();
   const { organizationId } = useSelectedOrganizationId();
@@ -79,8 +92,8 @@ export const useSettings = () => {
   const isOss = config?.app_mode === "oss";
 
   const query = useQuery({
-    queryKey: ["settings", organizationId],
-    queryFn: getSettingsQueryFn,
+    queryKey: ["settings", scope, organizationId],
+    queryFn: () => getSettingsQueryFn(scope),
     retry: (_, error) => error.status !== 404,
     refetchOnWindowFocus: false,
     staleTime: 1000 * 60 * 5,

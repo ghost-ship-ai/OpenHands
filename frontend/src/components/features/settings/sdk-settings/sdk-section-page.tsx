@@ -11,7 +11,7 @@ import { useMe } from "#/hooks/query/use-me";
 import { useSettings } from "#/hooks/query/use-settings";
 import { I18nKey } from "#/i18n/declaration";
 import { Typography } from "#/ui/typography";
-import { Settings, SettingsSchema } from "#/types/settings";
+import { Settings, SettingsSchema, SettingsScope } from "#/types/settings";
 import {
   displayErrorToast,
   displaySuccessToast,
@@ -50,6 +50,7 @@ export interface SdkSectionHeaderProps {
 export function SdkSectionPage({
   sectionKeys,
   excludeKeys = new Set<string>(),
+  scope = "personal",
   header,
   extraDirty = false,
   buildPayload,
@@ -59,6 +60,8 @@ export function SdkSectionPage({
 }: {
   sectionKeys: string[];
   excludeKeys?: Set<string>;
+  scope?: SettingsScope;
+
   header?: (props: SdkSectionHeaderProps) => React.ReactNode;
   extraDirty?: boolean;
   buildPayload?: (
@@ -77,8 +80,8 @@ export function SdkSectionPage({
   testId?: string;
 }) {
   const { t } = useTranslation();
-  const { mutate: saveSettings, isPending } = useSaveSettings();
-  const { data: settings, isLoading, isFetching } = useSettings();
+  const { mutate: saveSettings, isPending } = useSaveSettings(scope);
+  const { data: settings, isLoading, isFetching } = useSettings(scope);
   const { data: schema, isLoading: isSchemaLoading } = useAgentSettingsSchema(
     settings?.agent_settings_schema,
   );
@@ -87,7 +90,8 @@ export function SdkSectionPage({
   const { hasPermission } = usePermission(me?.role ?? "member");
 
   const isOssMode = config?.app_mode === "oss";
-  const isReadOnly = isOssMode ? false : !hasPermission("edit_llm_settings");
+  const isReadOnly =
+    scope === "org" && !isOssMode ? !hasPermission("edit_llm_settings") : false;
 
   const [view, setView] = React.useState<SettingsView>("basic");
   const [values, setValues] = React.useState<SettingsFormValues>({});

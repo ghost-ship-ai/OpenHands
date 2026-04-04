@@ -11,7 +11,6 @@ import { SettingsInput } from "#/components/features/settings/settings-input";
 import { HelpLink } from "#/ui/help-link";
 import { useConfig } from "#/hooks/query/use-config";
 import { KeyStatusIcon } from "#/components/features/settings/key-status-icon";
-import { useMe } from "#/hooks/query/use-me";
 import { useOrgTypeAndAccess } from "#/hooks/use-org-type-and-access";
 import { SettingsDropdownInput } from "#/components/features/settings/settings-dropdown-input";
 import {
@@ -23,7 +22,8 @@ import {
   displayErrorToast,
   displaySuccessToast,
 } from "#/utils/custom-toast-handlers";
-import { Settings, SettingsSchema } from "#/types/settings";
+import { Settings, SettingsSchema, SettingsScope } from "#/types/settings";
+import { OrgWideSettingsBadge } from "#/components/features/settings/org-wide-settings-badge";
 import { extractModelAndProvider } from "#/utils/extract-model-and-provider";
 import {
   inferInitialView,
@@ -85,17 +85,20 @@ function OpenHandsApiKeyHelp({ testId }: OpenHandsApiKeyHelpProps) {
   );
 }
 
-function LlmSettingsScreen() {
+export function LlmSettingsScreen({
+  scope = "personal",
+}: {
+  scope?: SettingsScope;
+}) {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const { data: resources } = useAIConfigOptions();
-  const { data: settings } = useSettings();
+  const { data: settings } = useSettings(scope);
   const { data: schema } = useAgentSettingsSchema(
     settings?.agent_settings_schema,
   );
   const { data: config } = useConfig();
-  const { data: me } = useMe();
   const { isTeamOrg } = useOrgTypeAndAccess();
 
   const [selectedProvider, setSelectedProvider] = React.useState<string | null>(
@@ -115,7 +118,6 @@ function LlmSettingsScreen() {
     String(DEFAULT_SETTINGS.agent_settings?.["llm.model"] ?? "");
 
   const isSaasMode = config?.app_mode === "saas";
-  const isAdminOrOwner = me?.role === "admin" || me?.role === "owner";
   const isV1Enabled = settings?.v1_enabled === true;
   const hasAgentField = hasSchemaField(schema, "agent");
 
@@ -145,10 +147,10 @@ function LlmSettingsScreen() {
 
   const infoMessageKey = React.useMemo((): I18nKey | null => {
     if (!isSaasMode || !isTeamOrg) return null;
-    return isAdminOrOwner
-      ? I18nKey.SETTINGS$LLM_ADMIN_INFO
-      : I18nKey.SETTINGS$LLM_MEMBER_INFO;
-  }, [isAdminOrOwner, isSaasMode, isTeamOrg]);
+    return scope === "org"
+      ? I18nKey.SETTINGS$ORG_DEFAULTS_INFO
+      : I18nKey.SETTINGS$PERSONAL_AGENT_INFO;
+  }, [isSaasMode, isTeamOrg, scope]);
 
   const getInitialView = React.useCallback(
     (
@@ -234,6 +236,8 @@ function LlmSettingsScreen() {
 
       return (
         <div className="flex flex-col gap-6">
+          {scope === "org" ? <OrgWideSettingsBadge /> : null}
+
           {infoMessageKey ? (
             <p
               data-testid="llm-settings-info-message"
@@ -416,7 +420,7 @@ function LlmSettingsScreen() {
         isSaasMode && activeProvider === "openhands";
 
       if (shouldUseOpenHandsKey && payload["llm.model"] !== undefined) {
-        payload["llm.api_key"] = null;
+        payload["llm.api_key"] = "";
       }
 
       return payload;
@@ -426,6 +430,7 @@ function LlmSettingsScreen() {
 
   return (
     <SdkSectionPage
+      scope={scope}
       sectionKeys={["llm", "general"]}
       excludeKeys={LLM_EXCLUDED_KEYS}
       header={buildHeader}

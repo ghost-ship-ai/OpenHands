@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { usePostHog } from "posthog-js/react";
 import { useSelectedOrganizationId } from "#/context/use-selected-organization";
+import { organizationService } from "#/api/organization-service/organization-service.api";
 import SettingsService from "#/api/settings-service/settings-service.api";
-import { MCPConfig, Settings } from "#/types/settings";
+import { MCPConfig, Settings, SettingsScope } from "#/types/settings";
 import { useSettings } from "../query/use-settings";
 
 type SettingsUpdate = Partial<Settings> & Record<string, unknown>;
@@ -20,7 +21,10 @@ const LEGACY_FLAT_TO_SDK: Record<string, string> = {
   max_iterations: "max_iterations",
 };
 
-const saveSettingsMutationFn = async (settings: SettingsUpdate) => {
+const saveSettingsMutationFn = async (
+  scope: SettingsScope,
+  settings: SettingsUpdate,
+) => {
   const settingsToSave: SettingsUpdate = { ...settings };
   delete settingsToSave.agent_settings_schema;
   delete settingsToSave.agent_settings;
@@ -50,13 +54,18 @@ const saveSettingsMutationFn = async (settings: SettingsUpdate) => {
     settingsToSave.git_user_email = settingsToSave.git_user_email.trim();
   }
 
+  if (scope === "org") {
+    await organizationService.saveOrganizationAgentSettings(settingsToSave);
+    return;
+  }
+
   await SettingsService.saveSettings(settingsToSave);
 };
 
-export const useSaveSettings = () => {
+export const useSaveSettings = (scope: SettingsScope = "personal") => {
   const posthog = usePostHog();
   const queryClient = useQueryClient();
-  const { data: currentSettings } = useSettings();
+  const { data: currentSettings } = useSettings(scope);
   const { organizationId } = useSelectedOrganizationId();
 
   return useMutation({
@@ -74,12 +83,17 @@ export const useSaveSettings = () => {
         });
       }
 
-      await saveSettingsMutationFn(settings);
+      await saveSettingsMutationFn(scope, settings);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({
-        queryKey: ["settings", organizationId],
+        queryKey: ["settings", scope, organizationId],
       });
+      if (scope === "org") {
+        await queryClient.invalidateQueries({
+          queryKey: ["settings", "personal", organizationId],
+        });
+      }
     },
     meta: {
       disableToast: true,
