@@ -105,14 +105,32 @@ CUSTOM_SECRETS_TYPE = Mapping[str, CustomSecret]
 
 
 class ProviderHandler:
-    # Class variable for provider domains
-    PROVIDER_DOMAINS: dict[ProviderType, str] = {
+    # Default domains for git providers
+    DEFAULT_PROVIDER_DOMAINS: dict[ProviderType, str] = {
         ProviderType.GITHUB: 'github.com',
         ProviderType.GITLAB: 'gitlab.com',
         ProviderType.BITBUCKET: 'bitbucket.org',
         ProviderType.FORGEJO: 'codeberg.org',
         ProviderType.AZURE_DEVOPS: 'dev.azure.com',
     }
+
+    # Env vars that override default domains for self-hosted instances.
+    # Add entries here to support new self-hosted providers.
+    _PROVIDER_HOST_ENV_VARS: dict[ProviderType, str] = {
+        ProviderType.GITLAB: 'GITLAB_HOST',
+    }
+
+    @staticmethod
+    def _resolve_provider_domains() -> dict[ProviderType, str]:
+        """Build provider domains, applying env var overrides."""
+        domains = dict(ProviderHandler.DEFAULT_PROVIDER_DOMAINS)
+        for provider, env_var in ProviderHandler._PROVIDER_HOST_ENV_VARS.items():
+            host = os.environ.get(env_var, '').strip()
+            if host:
+                domains[provider] = host
+        return domains
+
+    PROVIDER_DOMAINS: dict[ProviderType, str] = _resolve_provider_domains()
 
     def __init__(
         self,
@@ -147,14 +165,6 @@ class ProviderHandler:
         self.REFRESH_TOKEN_URL = (
             f'https://{WEB_HOST}/api/refresh-tokens' if WEB_HOST else None
         )
-
-        # Override provider domains from env vars for self-hosted instances
-        gitlab_host = os.environ.get('GITLAB_HOST', '').strip()
-        if gitlab_host:
-            self.PROVIDER_DOMAINS = {
-                **self.PROVIDER_DOMAINS,
-                ProviderType.GITLAB: gitlab_host,
-            }
 
     @property
     def provider_tokens(self) -> PROVIDER_TOKEN_TYPE:

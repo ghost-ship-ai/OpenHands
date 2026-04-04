@@ -12,6 +12,7 @@ from openhands.app_server.utils.dependencies import get_dependencies
 from openhands.core.logger import openhands_logger as logger
 from openhands.integrations.provider import (
     PROVIDER_TOKEN_TYPE,
+    ProviderHandler,
     ProviderType,
 )
 from openhands.server.routes.secrets import invalidate_legacy_secrets_store
@@ -153,13 +154,17 @@ async def load_settings(
 
         provider_tokens_set: dict[ProviderType, str | None] = {}
         if git_providers:
-            gitlab_host = os.environ.get('GITLAB_HOST', '').strip()
             for provider_type, provider_token in git_providers.items():
                 if provider_token.token or provider_token.user_id:
                     host = provider_token.host
-                    # Fall back to GITLAB_HOST env var for self-hosted GitLab
-                    if not host and provider_type == ProviderType.GITLAB and gitlab_host and gitlab_host != 'gitlab.com':
-                        host = gitlab_host
+                    # Fall back to env-var-configured host for self-hosted providers
+                    if not host:
+                        configured = ProviderHandler.PROVIDER_DOMAINS.get(provider_type)
+                        default = ProviderHandler.DEFAULT_PROVIDER_DOMAINS.get(
+                            provider_type
+                        )
+                        if configured and configured != default:
+                            host = configured
                     provider_tokens_set[provider_type] = host
 
         settings_with_token_data = GETSettingsModel(
