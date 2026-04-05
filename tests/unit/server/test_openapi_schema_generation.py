@@ -6,6 +6,7 @@ from fastapi import Request
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
 
+from openhands.app_server.user.user_models import UserMeta
 from openhands.integrations.provider import ProviderToken, ProviderType
 from openhands.server.app import app
 from openhands.server.user_auth.user_auth import UserAuth
@@ -48,6 +49,9 @@ class MockUserAuth(UserAuth):
 
     async def get_mcp_api_key(self) -> str | None:
         return None
+
+    async def get_user_meta(self) -> UserMeta:
+        raise NotImplementedError()
 
     @classmethod
     async def get_instance(cls, request: Request) -> UserAuth:

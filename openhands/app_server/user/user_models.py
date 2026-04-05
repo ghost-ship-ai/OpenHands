@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from enum import Enum
 from typing import Annotated
 
@@ -14,7 +16,7 @@ from pydantic import (
 
 from openhands.core.config.llm_config import LLMConfig
 from openhands.core.config.mcp_config import MCPConfig
-from openhands.integrations.provider import PROVIDER_TOKEN_TYPE
+from openhands.integrations.provider_models import PROVIDER_TOKEN_TYPE
 from openhands.storage.data_models.secrets import Secrets
 
 
@@ -167,7 +169,7 @@ class Settings(BaseModel):
         return {'provider_tokens': {}}
 
     @staticmethod
-    def from_config() -> 'Settings' | None:
+    def from_config() -> Settings | None:
         from openhands.core.config.utils import load_openhands_config
 
         app_config = load_openhands_config()
