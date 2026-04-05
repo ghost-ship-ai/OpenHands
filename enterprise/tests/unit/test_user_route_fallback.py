@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from pydantic import SecretStr
 
-from openhands.integrations.service_types import User
+from openhands.app_server.user.user_models import UserMeta
 
 
 @pytest.fixture
@@ -66,7 +66,7 @@ async def test_fallback_user_includes_name_from_name_claim(
         user_id='248289761001',
     )
 
-    assert isinstance(result, User)
+    assert isinstance(result, UserMeta)
     assert result.name == 'Jane Doe'
     assert result.email == 'jane@example.com'
 
@@ -94,7 +94,7 @@ async def test_fallback_user_combines_given_and_family_name(
         user_id='248289761001',
     )
 
-    assert isinstance(result, User)
+    assert isinstance(result, UserMeta)
     assert result.name == 'Jane Doe'
 
 
@@ -119,7 +119,7 @@ async def test_fallback_user_name_is_none_when_no_name_claims(
         user_id='248289761001',
     )
 
-    assert isinstance(result, User)
+    assert isinstance(result, UserMeta)
     assert result.name is None
 
 
@@ -146,7 +146,7 @@ async def test_fallback_user_includes_company_claim(
         user_id='248289761001',
     )
 
-    assert isinstance(result, User)
+    assert isinstance(result, UserMeta)
     assert result.company == 'Acme Corp'
 
 
@@ -172,7 +172,7 @@ async def test_fallback_user_company_is_none_when_absent(
         user_id='248289761001',
     )
 
-    assert isinstance(result, User)
+    assert isinstance(result, UserMeta)
     assert result.company is None
 
 
@@ -201,7 +201,7 @@ async def test_fallback_user_email_from_db_when_available(
         user_id='248289761001',
     )
 
-    assert isinstance(result, User)
+    assert isinstance(result, UserMeta)
     assert result.email == 'db@example.com'
 
 
@@ -230,7 +230,7 @@ async def test_fallback_user_email_falls_back_to_keycloak_when_db_null(
         user_id='248289761001',
     )
 
-    assert isinstance(result, User)
+    assert isinstance(result, UserMeta)
     assert result.email == 'keycloak@example.com'
 
 
@@ -257,5 +257,5 @@ async def test_fallback_user_email_falls_back_to_keycloak_when_no_db_user(
         user_id='248289761001',
     )
 
-    assert isinstance(result, User)
+    assert isinstance(result, UserMeta)
     assert result.email == 'keycloak@example.com'
