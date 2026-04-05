@@ -118,7 +118,7 @@ async def get_user(
     provider_tokens: PROVIDER_TOKEN_TYPE | None = Depends(get_provider_tokens),
     access_token: SecretStr | None = Depends(get_access_token),
     user_id: str | None = Depends(get_user_id),
-) -> UserMeta | JSONResponse:
+) -> UserMeta:
     """Get the authenticated user's information.
 
     .. deprecated::
@@ -130,15 +130,8 @@ async def get_user(
             provider_tokens=provider_tokens, external_auth_token=access_token
         )
 
-        try:
-            user: UserMeta = await client.get_user()
-            return user
-
-        except UnknownException as e:
-            return JSONResponse(
-                content=str(e),
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+        user: UserMeta = await client.get_user()
+        return user
 
     logger.info(
         f'Returning 401 Unauthorized - Git provider token required for user_id: {user_id}'

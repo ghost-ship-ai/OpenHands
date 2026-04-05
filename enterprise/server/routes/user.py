@@ -1,6 +1,6 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 from pydantic import SecretStr
 from server.auth.token_manager import TokenManager
@@ -151,7 +151,7 @@ async def saas_get_user(
     provider_tokens: PROVIDER_TOKEN_TYPE | None = Depends(get_provider_tokens),
     access_token: SecretStr | None = Depends(get_access_token),
     user_id: str | None = Depends(get_user_id),
-) -> UserMeta | JSONResponse:
+) -> UserMeta:
     """Get the authenticated user's information.
 
     .. deprecated::
@@ -160,9 +160,9 @@ async def saas_get_user(
     """
     if not provider_tokens:
         if not access_token:
-            return JSONResponse(
-                content='User is not authenticated.',
+            raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='User is not authenticated.',
             )
         user_info = await token_manager.get_user_info(access_token.get_secret_value())
         # Prefer email from DB; fall back to Keycloak if not yet persisted
