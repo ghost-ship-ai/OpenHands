@@ -4,12 +4,12 @@ import httpx
 import pytest
 from pydantic import SecretStr
 
+from openhands.app_server.user.user_models import UserMeta
 from openhands.integrations.forgejo.forgejo_service import ForgejoService
 from openhands.integrations.service_types import (
     ProviderType,
     Repository,
     RequestMethod,
-    User,
 )
 from openhands.server.types import AppMode
 
@@ -38,7 +38,7 @@ async def test_get_user(forgejo_service):
     user = await forgejo_service.get_user()
 
     # Verify the result
-    assert isinstance(user, User)
+    assert isinstance(user, UserMeta)
     assert user.id == '1'
     assert user.login == 'test_user'
     assert user.avatar_url == 'https://codeberg.org/avatar/test_user'

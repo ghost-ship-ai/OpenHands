@@ -2,14 +2,15 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from openhands.app_server.user.user_models import UserMeta
 from openhands.integrations.github.github_service import GitHubService
-from openhands.integrations.service_types import TaskType, User
+from openhands.integrations.service_types import TaskType
 
 
 @pytest.mark.asyncio
 async def test_get_suggested_tasks():
     # Mock responses
-    mock_user = User(
+    mock_user = UserMeta(
         id='1',
         login='test-user',
         avatar_url='https://example.com/avatar.jpg',

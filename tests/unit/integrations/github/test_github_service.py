@@ -4,13 +4,13 @@ import httpx
 import pytest
 from pydantic import SecretStr
 
+from openhands.app_server.user.user_models import UserMeta
 from openhands.integrations.github.github_service import GitHubService
-from openhands.integrations.service_types import (
+from openhands.integrations.service_type_models import (
     AuthenticationError,
     OwnerType,
     ProviderType,
     Repository,
-    User,
 )
 from openhands.server.types import AppMode
 
@@ -253,7 +253,7 @@ async def test_github_search_repositories_with_organizations():
     service = GitHubService(user_id='test-user', token=SecretStr('test-token'))
 
     # Mock user data
-    mock_user = User(
+    mock_user = UserMeta(
         id='123', login='testuser', avatar_url='https://example.com/avatar.jpg'
     )
 

@@ -31,7 +31,7 @@ def test_settings_from_config():
     )
 
     with patch(
-        'openhands.storage.data_models.settings.load_openhands_config',
+        'openhands.core.config.utils.load_openhands_config',
         return_value=mock_app_config,
     ):
         settings = Settings.from_config()
@@ -67,7 +67,7 @@ def test_settings_from_config_no_api_key():
     )
 
     with patch(
-        'openhands.storage.data_models.settings.load_openhands_config',
+        'openhands.core.config.utils.load_openhands_config',
         return_value=mock_app_config,
     ):
         settings = Settings.from_config()

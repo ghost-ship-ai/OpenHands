@@ -6,10 +6,11 @@ from unittest.mock import patch
 import pytest
 from pydantic import SecretStr
 
+from openhands.app_server.user.user_models import UserMeta
 from openhands.integrations.bitbucket_data_center.bitbucket_dc_service import (
     BitbucketDCService,
 )
-from openhands.integrations.service_types import AuthenticationError, User
+from openhands.integrations.service_type_models import AuthenticationError
 from openhands.server.types import AppMode
 
 # ── init / BASE_URL ───────────────────────────────────────────────────────────
@@ -121,7 +122,7 @@ async def test_get_user_without_user_id():
         user = await svc.get_user()
         mock_req.assert_not_called()
 
-    assert isinstance(user, User)
+    assert isinstance(user, UserMeta)
     assert user.id == ''
     assert user.login == ''
 
