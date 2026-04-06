@@ -61,11 +61,6 @@ on:
       PAT_USERNAME:
         required: false
 
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
-
 jobs:
   auto-fix:
     if: |
