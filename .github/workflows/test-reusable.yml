@@ -1,4 +1,4 @@
-name: Test With Permissions
+name: Test No Permissions
 
 on:
   workflow_call:
@@ -10,11 +10,6 @@ on:
     secrets:
       LLM_API_KEY:
         required: true
-
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
 
 jobs:
   test:
