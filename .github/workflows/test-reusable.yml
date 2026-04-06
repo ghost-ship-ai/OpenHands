@@ -1,4 +1,4 @@
-name: Test Reusable
+name: Test With Permissions
 
 on:
   workflow_call:
@@ -7,6 +7,14 @@ on:
         required: false
         type: string
         default: "hello"
+    secrets:
+      LLM_API_KEY:
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
 
 jobs:
   test:
