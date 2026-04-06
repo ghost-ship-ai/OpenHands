@@ -38,6 +38,17 @@ on:
         required: false
         type: string
         default: "ubuntu-latest"
+      repo:
+        required: false
+        type: string
+        default: ""
+        description: "Target repository (owner/name). Defaults to calling repo."
+      issue_number:
+        required: false
+        type: number
+        default: 0
+        description: "Issue number to resolve (for cross-repo dispatch)."
+
     secrets:
       LLM_MODEL:
         required: false
@@ -185,6 +196,18 @@ jobs:
           fi
 
           echo "MAX_ITERATIONS=${{ inputs.max_iterations || 50 }}" >> $GITHUB_ENV
+
+          # Target repo for cross-repo dispatch
+          TARGET_REPO="${{ inputs.repo || github.repository }}"
+          echo "REPO_FULL=$TARGET_REPO" >> $GITHUB_ENV
+          echo "REPO_OWNER=$(echo $TARGET_REPO | cut -d'/' -f1)" >> $GITHUB_ENV
+          echo "REPO_NAME=$(echo $TARGET_REPO | cut -d'/' -f2)" >> $GITHUB_ENV
+
+          # Override issue number if provided via input (cross-repo dispatch)
+          if [ "${{ inputs.issue_number }}" != "0" ] && [ -n "${{ inputs.issue_number }}" ]; then
+            echo "ISSUE_NUMBER=${{ inputs.issue_number }}" >> $GITHUB_ENV
+            echo "ISSUE_TYPE=issue" >> $GITHUB_ENV
+          fi
           echo "SANDBOX_ENV_GITHUB_TOKEN=${{ secrets.PAT_TOKEN || github.token }}" >> $GITHUB_ENV
           echo "SANDBOX_BASE_CONTAINER_IMAGE=${{ inputs.base_container_image }}" >> $GITHUB_ENV
 
@@ -199,9 +222,9 @@ jobs:
             const issueType = process.env.ISSUE_TYPE;
             github.rest.issues.createComment({
               issue_number: ${{ env.ISSUE_NUMBER }},
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `[OpenHands](https://github.com/OpenHands/OpenHands) started fixing the ${issueType}! You can monitor the progress [here](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}).`
+              owner: process.env.REPO_OWNER,
+              repo: process.env.REPO_NAME,
+              body: `[OpenHands](https://github.com/OpenHands/OpenHands) started fixing the ${issueType}! You can monitor the progress [here](https://github.com/${process.env.REPO_OWNER}/${process.env.REPO_NAME}/actions/runs/${context.runId}).`
             });
 
       - name: Install OpenHands
@@ -252,7 +275,7 @@ jobs:
           PYTHONPATH: ""
         run: |
           cd /tmp && python -m openhands.resolver.resolve_issue \
-            --selected-repo ${{ github.repository }} \
+            --selected-repo ${{ inputs.repo || github.repository }} \
             --issue-number ${{ env.ISSUE_NUMBER }} \
             --issue-type ${{ env.ISSUE_TYPE }} \
             --max-iterations ${{ env.MAX_ITERATIONS }} \
@@ -332,8 +355,8 @@ jobs:
             } else if (logContent.includes(noChangesMessage)) {
               github.rest.issues.createComment({
                 issue_number: issueNumber,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
+                owner: process.env.REPO_OWNER,
+                repo: process.env.REPO_NAME,
                 body: `The workflow to fix this issue encountered an error. Openhands failed to create any code changes.`
               });
               process.env.AGENT_RESPONDED = 'true';
@@ -393,13 +416,13 @@ jobs:
             if (success && prNumber) {
               github.rest.issues.createComment({
                 issue_number: issueNumber,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
+                owner: process.env.REPO_OWNER,
+                repo: process.env.REPO_NAME,
                 body: `A potential fix has been generated and a draft PR #${prNumber} has been created. Please review the changes.`
               });
               process.env.AGENT_RESPONDED = 'true';
             } else if (!success && branchName) {
-              let commentBody = `An attempt was made to automatically fix this issue, but it was unsuccessful. A branch named '${branchName}' has been created with the attempted changes. You can view the branch [here](https://github.com/${context.repo.owner}/${context.repo.repo}/tree/${branchName}). Manual intervention may be required.`;
+              let commentBody = `An attempt was made to automatically fix this issue, but it was unsuccessful. A branch named '${branchName}' has been created with the attempted changes. You can view the branch [here](https://github.com/${process.env.REPO_OWNER}/${process.env.REPO_NAME}/tree/${branchName}). Manual intervention may be required.`;
 
               if (resultExplanation) {
                 commentBody += `\n\nAdditional details about the failure:\n${resultExplanation}`;
@@ -407,8 +430,8 @@ jobs:
 
               github.rest.issues.createComment({
                 issue_number: issueNumber,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
+                owner: process.env.REPO_OWNER,
+                repo: process.env.REPO_NAME,
                 body: commentBody
               });
               process.env.AGENT_RESPONDED = 'true';
@@ -427,7 +450,7 @@ jobs:
 
             github.rest.issues.createComment({
               issue_number: issueNumber,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `The workflow to fix this issue encountered an error. Please check the [workflow logs](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for more information.`
+              owner: process.env.REPO_OWNER,
+              repo: process.env.REPO_NAME,
+              body: `The workflow to fix this issue encountered an error. Please check the [workflow logs](https://github.com/${process.env.REPO_OWNER}/${process.env.REPO_NAME}/actions/runs/${context.runId}) for more information.`
             });
