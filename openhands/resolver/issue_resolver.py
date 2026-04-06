@@ -606,11 +606,11 @@ class IssueResolver:
 
         if self.repo_instruction is None:
             # Check for .openhands_instructions file in the workspace directory
-            openhands_instructions_path = os.path.join(
-                repo_dir, '.openhands_instructions'
+            ghostship_instructions_path = os.path.join(
+                repo_dir, '.ghost-ship/instructions'
             )
-            if os.path.exists(openhands_instructions_path):
-                with open(openhands_instructions_path, 'r') as f:
+            if os.path.exists(ghostship_instructions_path):
+                with open(ghostship_instructions_path, 'r') as f:
                     self.repo_instruction = f.read()
 
         # OUTPUT FILE

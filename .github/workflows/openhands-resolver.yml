@@ -10,7 +10,7 @@ on:
       macro:
         required: false
         type: string
-        default: "@openhands-agent"
+        default: "@ghost-ship-ai"
       target_branch:
         required: false
         type: string
@@ -74,12 +74,12 @@ jobs:
       github.event.label.name == 'fix-me-experimental' ||
       (
         ((github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment') &&
-        contains(github.event.comment.body, inputs.macro || '@openhands-agent') &&
+        contains(github.event.comment.body, inputs.macro || '@ghost-ship-ai') &&
         (github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'MEMBER')
         ) ||
 
         (github.event_name == 'pull_request_review' &&
-        contains(github.event.review.body, inputs.macro || '@openhands-agent') &&
+        contains(github.event.review.body, inputs.macro || '@ghost-ship-ai') &&
         (github.event.review.author_association == 'OWNER' || github.event.review.author_association == 'COLLABORATOR' || github.event.review.author_association == 'MEMBER')
         )
       )
@@ -111,11 +111,11 @@ jobs:
             github.event.label.name == 'fix-me-experimental' ||
             (
               (github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment') &&
-              contains(github.event.comment.body, '@openhands-agent-exp')
+              contains(github.event.comment.body, '@ghost-ship-ai-exp')
             ) ||
             (
               github.event_name == 'pull_request_review' &&
-              contains(github.event.review.body, '@openhands-agent-exp')
+              contains(github.event.review.body, '@ghost-ship-ai-exp')
             )
           )
         uses: actions/cache@v5
@@ -222,9 +222,9 @@ jobs:
             const isExperimentalLabel = labelName === "fix-me-experimental";
             const isIssueCommentExperimental =
               (eventName === "issue_comment" || eventName === "pull_request_review_comment") &&
-              commentBody.includes("@openhands-agent-exp");
+              commentBody.includes("@ghost-ship-ai-exp");
             const isReviewCommentExperimental =
-              eventName === "pull_request_review" && reviewBody.includes("@openhands-agent-exp");
+              eventName === "pull_request_review" && reviewBody.includes("@ghost-ship-ai-exp");
 
             // Set output variable
             core.setOutput('isExperimental', isExperimentalLabel || isIssueCommentExperimental || isReviewCommentExperimental);

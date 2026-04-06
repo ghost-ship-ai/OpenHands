@@ -1,4 +1,4 @@
-name: Resolve Issue with OpenHands
+name: Ghost Ship AI Issue Resolver
 
 on:
   issues:
@@ -21,7 +21,7 @@ jobs:
   call-openhands-resolver:
     uses: OpenHands/OpenHands/.github/workflows/openhands-resolver.yml@main
     with:
-      macro: ${{ vars.OPENHANDS_MACRO || '@openhands-agent' }}
+      macro: ${{ vars.OPENHANDS_MACRO || '@ghost-ship-ai' }}
       max_iterations: ${{ fromJson(vars.OPENHANDS_MAX_ITER || 50) }}
       base_container_image: ${{ vars.OPENHANDS_BASE_CONTAINER_IMAGE || '' }}
       LLM_MODEL: ${{ vars.LLM_MODEL || 'anthropic/claude-sonnet-4-20250514' }}
