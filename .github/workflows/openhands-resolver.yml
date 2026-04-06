@@ -83,6 +83,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          repository: ${{ inputs.repo || github.repository }}
+          token: ${{ secrets.PAT_TOKEN || github.token }}
 
       - name: Set up Python
         uses: actions/setup-python@v6
