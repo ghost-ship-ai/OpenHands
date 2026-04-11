@@ -289,6 +289,10 @@ class AgentController:
 
         self.state_tracker.close(self.event_stream)
 
+        # Sync LLM cost/token metrics into state.metrics so output.jsonl has them
+        combined = self.conversation_stats.get_combined_metrics()
+        self.state.metrics.merge(combined)
+
         # unsubscribe from the event stream
         # only the root parent controller subscribes to the event stream
         if not self.is_delegate:
